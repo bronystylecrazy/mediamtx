@@ -18,14 +18,6 @@ import (
 	"github.com/bluenviron/mediamtx/internal/protocols/httpp"
 )
 
-//go:generate go run ./hlsjsdownloader
-
-//go:embed index.html
-var hlsIndex []byte
-
-//go:embed hls.min.js
-var hlsMinJS []byte
-
 func mergePathAndQuery(path string, rawQuery string) string {
 	res := path
 	if rawQuery != "" {
@@ -108,16 +100,6 @@ func (s *httpServer) onRequest(ctx *gin.Context) {
 	var fname string
 
 	switch {
-	case strings.HasSuffix(pa, "/hls.min.js"):
-		ctx.Header("Cache-Control", "max-age=3600")
-		ctx.Header("Content-Type", "application/javascript")
-		ctx.Writer.WriteHeader(http.StatusOK)
-		ctx.Writer.Write(hlsMinJS)
-		return
-
-	case pa == "", pa == "favicon.ico", strings.HasSuffix(pa, "/hls.min.js.map"):
-		return
-
 	case strings.HasSuffix(pa, ".m3u8") ||
 		strings.HasSuffix(pa, ".ts") ||
 		strings.HasSuffix(pa, ".mp4") ||
@@ -180,7 +162,7 @@ func (s *httpServer) onRequest(ctx *gin.Context) {
 		ctx.Header("Cache-Control", "max-age=3600")
 		ctx.Header("Content-Type", "text/html")
 		ctx.Writer.WriteHeader(http.StatusOK)
-		ctx.Writer.Write(hlsIndex)
+		ctx.Writer.Write([]byte(""))
 
 	default:
 		var mux *muxer

@@ -18,6 +18,7 @@ import (
 	"github.com/bluenviron/mediamtx/internal/recorder"
 	"github.com/bluenviron/mediamtx/internal/staticsources"
 	"github.com/bluenviron/mediamtx/internal/stream"
+	"github.com/bluenviron/mediamtx/pkg/utils"
 )
 
 func emptyTimer() *time.Timer {
@@ -612,7 +613,7 @@ func (pa *path) ExternalCmdEnv() externalcmd.Environment {
 		}
 	}
 
-	return env
+	return utils.BuildCmdEnv(env)
 }
 
 func (pa *path) shouldClose() bool {

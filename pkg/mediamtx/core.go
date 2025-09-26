@@ -831,38 +831,38 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 		closePathManager ||
 		closeLogger
 
-	closeAPI := newConf == nil ||
-		newConf.API != p.conf.API ||
-		newConf.APIAddress != p.conf.APIAddress ||
-		newConf.APIEncryption != p.conf.APIEncryption ||
-		newConf.APIServerKey != p.conf.APIServerKey ||
-		newConf.APIServerCert != p.conf.APIServerCert ||
-		newConf.APIAllowOrigin != p.conf.APIAllowOrigin ||
-		!reflect.DeepEqual(newConf.APITrustedProxies, p.conf.APITrustedProxies) ||
-		newConf.ReadTimeout != p.conf.ReadTimeout ||
-		closeAuthManager ||
-		closePathManager ||
-		closeRTSPServer ||
-		closeRTSPSServer ||
-		closeRTMPServer ||
-		closeHLSServer ||
-		closeWebRTCServer ||
-		closeSRTServer ||
-		closeLogger
+	// closeAPI := newConf == nil ||
+	// 	newConf.API != p.conf.API ||
+	// 	newConf.APIAddress != p.conf.APIAddress ||
+	// 	newConf.APIEncryption != p.conf.APIEncryption ||
+	// 	newConf.APIServerKey != p.conf.APIServerKey ||
+	// 	newConf.APIServerCert != p.conf.APIServerCert ||
+	// 	newConf.APIAllowOrigin != p.conf.APIAllowOrigin ||
+	// 	!reflect.DeepEqual(newConf.APITrustedProxies, p.conf.APITrustedProxies) ||
+	// 	newConf.ReadTimeout != p.conf.ReadTimeout ||
+	// 	closeAuthManager ||
+	// 	closePathManager ||
+	// 	closeRTSPServer ||
+	// 	closeRTSPSServer ||
+	// 	closeRTMPServer ||
+	// 	closeHLSServer ||
+	// 	closeWebRTCServer ||
+	// 	closeSRTServer ||
+	// 	closeLogger
 
 	if newConf == nil && p.confWatcher != nil {
 		p.confWatcher.Close()
 		p.confWatcher = nil
 	}
 
-	if p.api != nil {
-		if closeAPI {
-			p.api.Close()
-			p.api = nil
-		} else if !calledByAPI { // avoid a loop
-			p.api.ReloadConf(newConf)
-		}
-	}
+	// if p.api != nil {
+	// 	if closeAPI {
+	// 		p.api.Close()
+	// 		p.api = nil
+	// 	} else if !calledByAPI { // avoid a loop
+	// 		p.api.ReloadConf(newConf)
+	// 	}
+	// }
 
 	if closeSRTServer && p.srtServer != nil {
 		p.srtServer.Close()

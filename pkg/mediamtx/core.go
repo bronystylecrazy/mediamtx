@@ -17,7 +17,6 @@ import (
 	"github.com/bluenviron/gortsplib/v5"
 	"github.com/gin-gonic/gin"
 
-	"github.com/bluenviron/mediamtx/internal/api"
 	"github.com/bluenviron/mediamtx/internal/auth"
 	"github.com/bluenviron/mediamtx/internal/conf"
 	"github.com/bluenviron/mediamtx/internal/confwatcher"
@@ -90,8 +89,8 @@ type Core struct {
 	hlsServer       *hls.Server
 	webRTCServer    *webrtc.Server
 	srtServer       *srt.Server
-	api             *api.API
-	confWatcher     *confwatcher.ConfWatcher
+	// api             *api.API
+	confWatcher *confwatcher.ConfWatcher
 
 	// in
 	chAPIConfigSet chan *conf.Conf
@@ -580,34 +579,34 @@ func (p *Core) createResources(initial bool) error {
 		p.srtServer = i
 	}
 
-	if p.conf.API &&
-		p.api == nil {
-		i := &api.API{
-			Address:        p.conf.APIAddress,
-			Encryption:     p.conf.APIEncryption,
-			ServerKey:      p.conf.APIServerKey,
-			ServerCert:     p.conf.APIServerCert,
-			AllowOrigin:    p.conf.APIAllowOrigin,
-			TrustedProxies: p.conf.APITrustedProxies,
-			ReadTimeout:    p.conf.ReadTimeout,
-			Conf:           p.conf,
-			AuthManager:    p.authManager,
-			PathManager:    p.pathManager,
-			RTSPServer:     p.rtspServer,
-			RTSPSServer:    p.rtspsServer,
-			RTMPServer:     p.rtmpServer,
-			RTMPSServer:    p.rtmpsServer,
-			HLSServer:      p.hlsServer,
-			WebRTCServer:   p.webRTCServer,
-			SRTServer:      p.srtServer,
-			Parent:         p,
-		}
-		err = i.Initialize()
-		if err != nil {
-			return err
-		}
-		p.api = i
-	}
+	// if p.conf.API &&
+	// 	p.api == nil {
+	// 	i := &api.API{
+	// 		Address:        p.conf.APIAddress,
+	// 		Encryption:     p.conf.APIEncryption,
+	// 		ServerKey:      p.conf.APIServerKey,
+	// 		ServerCert:     p.conf.APIServerCert,
+	// 		AllowOrigin:    p.conf.APIAllowOrigin,
+	// 		TrustedProxies: p.conf.APITrustedProxies,
+	// 		ReadTimeout:    p.conf.ReadTimeout,
+	// 		Conf:           p.conf,
+	// 		AuthManager:    p.authManager,
+	// 		PathManager:    p.pathManager,
+	// 		RTSPServer:     p.rtspServer,
+	// 		RTSPSServer:    p.rtspsServer,
+	// 		RTMPServer:     p.rtmpServer,
+	// 		RTMPSServer:    p.rtmpsServer,
+	// 		HLSServer:      p.hlsServer,
+	// 		WebRTCServer:   p.webRTCServer,
+	// 		SRTServer:      p.srtServer,
+	// 		Parent:         p,
+	// 	}
+	// 	err = i.Initialize()
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	p.api = i
+	// }
 
 	if initial && p.confPath != "" {
 		cf := &confwatcher.ConfWatcher{FilePath: p.confPath}

@@ -14,7 +14,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/alecthomas/kong"
 	"github.com/bluenviron/gortsplib/v5"
 	"github.com/gin-gonic/gin"
 
@@ -83,7 +82,7 @@ type Core struct {
 	pprof           *pprof.PPROF
 	recordCleaner   *recordcleaner.Cleaner
 	playbackServer  *playback.Server
-	pathManager     *PathManager
+	pathManager     *pathManager
 	rtspServer      *rtsp.Server
 	rtspsServer     *rtsp.Server
 	rtmpServer      *rtmp.Server
@@ -102,28 +101,7 @@ type Core struct {
 }
 
 // New allocates a Core.
-func New(args []string) (*Core, bool) {
-	parser, err := kong.New(&cli,
-		kong.UsageOnError(),
-		kong.ValueFormatter(func(value *kong.Value) string {
-			switch value.Name {
-			case "confpath":
-				return "path to a config file. The default is mediamtx.yml."
-
-			default:
-				return kong.DefaultHelpValueFormatter(value)
-			}
-		}))
-	if err != nil {
-		panic(err)
-	}
-
-	_, err = parser.Parse(args)
-	parser.FatalIfErrorf(err)
-
-	if cli.Version {
-		os.Exit(0)
-	}
+func New() (*Core, error) {
 
 	ctx, ctxCancel := context.WithCancel(context.Background())
 
@@ -136,11 +114,14 @@ func New(args []string) (*Core, bool) {
 
 	tempLogger, _ := logger.New(logger.Warn, []logger.Destination{logger.DestinationStdout}, "", "")
 
-	p.conf, p.confPath, err = conf.Load(cli.Confpath, defaultConfPaths, tempLogger)
+	conf, confPath, err := conf.Load(cli.Confpath, defaultConfPaths, tempLogger)
 	if err != nil {
 		fmt.Printf("ERR: %s\n", err)
-		return nil, false
+		return nil, err
 	}
+
+	p.conf = conf
+	p.confPath = confPath
 
 	err = p.createResources(true)
 	if err != nil {
@@ -150,18 +131,22 @@ func New(args []string) (*Core, bool) {
 			fmt.Printf("ERR: %s\n", err)
 		}
 		p.closeResources(nil, false)
-		return nil, false
+		return nil, err
 	}
 
-	go p.run()
+	return p, nil
+}
 
-	return p, true
+func (p *Core) Run(ctx context.Context) error {
+	go p.run()
+	return nil
 }
 
 // Close closes Core and waits for all goroutines to return.
-func (p *Core) Close() {
+func (p *Core) Close(ctx context.Context) error {
 	p.ctxCancel()
 	<-p.done
+	return nil
 }
 
 // Wait waits for the Core to exit.
@@ -360,7 +345,7 @@ func (p *Core) createResources(initial bool) error {
 	if p.pathManager == nil {
 		rtpMaxPayloadSize := getRTPMaxPayloadSize(p.conf.UDPMaxPayloadSize, p.conf.RTSPEncryption)
 
-		p.pathManager = &PathManager{
+		p.pathManager = &pathManager{
 			logLevel:          p.conf.LogLevel,
 			authManager:       p.authManager,
 			rtspAddress:       p.conf.RTSPAddress,
@@ -373,7 +358,7 @@ func (p *Core) createResources(initial bool) error {
 			metrics:           p.metrics,
 			parent:            p,
 		}
-		p.pathManager.New()
+		p.pathManager.initialize()
 	}
 
 	if p.conf.RTSP &&
@@ -916,7 +901,7 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 	}
 
 	if closePathManager && p.pathManager != nil {
-		p.pathManager.Close()
+		p.pathManager.close()
 		p.pathManager = nil
 	}
 

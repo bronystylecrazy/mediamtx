@@ -1,4 +1,4 @@
-package core
+package mediamtx
 
 import (
 	"github.com/bluenviron/mediamtx/internal/defs"

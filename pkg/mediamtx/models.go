@@ -401,6 +401,43 @@ func NewPathConfigBuilder() *PathConfigBuilder {
 	}
 }
 
+// Convenience factory methods for common path types
+
+// NewSimplePathConfig creates a builder for a simple path
+func NewSimplePathConfig(name, source string, enableRecording bool) *PathConfigBuilder {
+	builder := NewPathConfigBuilder().SetName(name).SetSource(source)
+	if enableRecording {
+		builder = builder.SetupRecording(name)
+	}
+	return builder
+}
+
+// NewRTSPPathConfig creates a builder for an RTSP path
+func NewRTSPPathConfig(name, rtspURL string, enableRecording bool) *PathConfigBuilder {
+	builder := NewPathConfigBuilder().SetName(name).SetSource(rtspURL).SetupRTSP()
+	if enableRecording {
+		builder = builder.SetupRecording(name)
+	}
+	return builder
+}
+
+// NewPublisherPathConfig creates a builder for a publisher path
+func NewPublisherPathConfig(name string, enableRecording bool) *PathConfigBuilder {
+	builder := NewPathConfigBuilder().SetName(name).SetSource("publisher")
+	if enableRecording {
+		builder = builder.SetupRecording(name)
+	}
+	return builder
+}
+
+// NewOnDemandPathConfig creates a builder for an on-demand path
+func NewOnDemandPathConfig(name, source, command string) *PathConfigBuilder {
+	return NewPathConfigBuilder().
+		SetName(name).
+		SetSource(source).
+		SetupOnDemand(command)
+}
+
 // SetName sets the path name
 func (b *PathConfigBuilder) SetName(name string) *PathConfigBuilder {
 	b.config.Name = name
@@ -462,6 +499,25 @@ func (b *PathConfigBuilder) SetRTSPAnyPort(enabled bool) *PathConfigBuilder {
 }
 
 // Build returns the built path configuration
+// Convenience preset methods for common configurations
+
+// SetupRecording configures recording with default settings
+func (b *PathConfigBuilder) SetupRecording(pathName string) *PathConfigBuilder {
+	return b.SetRecording(true).
+		SetRecordPath(fmt.Sprintf("/recordings/%s", pathName)).
+		SetRecordFormat("fmp4")
+}
+
+// SetupRTSP configures RTSP-specific settings with defaults
+func (b *PathConfigBuilder) SetupRTSP() *PathConfigBuilder {
+	return b.SetRTSPTransport("automatic").SetSourceOnDemand(false)
+}
+
+// SetupOnDemand configures on-demand activation
+func (b *PathConfigBuilder) SetupOnDemand(command string) *PathConfigBuilder {
+	return b.SetSourceOnDemand(true).SetRunOnDemand(command)
+}
+
 func (b *PathConfigBuilder) Build() PathConf {
 	return b.config
 }

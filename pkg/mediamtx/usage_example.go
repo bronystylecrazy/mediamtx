@@ -158,7 +158,7 @@ func ExampleAdvancedPathOperations() {
 	fmt.Println("Advanced Path Operations Example...")
 
 	// Using helpers directly
-	helper := NewPathHelper()
+	_ = NewPathHelper() // Keep for other functionality
 	validator := NewPathValidator()
 	analyzer := NewPathAnalyzer()
 	query := NewPathQuery()
@@ -223,15 +223,15 @@ func ExampleAdvancedPathOperations() {
 		}
 	}
 
-	// Create path configurations using helpers
-	fmt.Println("\n🛠️ Creating paths with helpers:")
+	// Create path configurations using new factory methods
+	fmt.Println("\n🛠️ Creating paths with factory methods:")
 	
-	basicPath := helper.CreateBasicPath()
-	rtspPath := helper.CreateRTSPPath("rtsp://example.com/stream")
-	recordingPath := helper.CreateRecordingPath("/recordings/test", 0) // FMP4
+	basicPath := NewSimplePathConfig("basic", "publisher", false).Build()
+	rtspPath := NewRTSPPathConfig("rtsp_test", "rtsp://example.com/stream", false).Build()
+	recordingPath := NewSimplePathConfig("recording_test", "publisher", true).Build()
 	
-	if basicPath != nil && rtspPath != nil && recordingPath != nil {
-		fmt.Println("✅ All helper path configurations created successfully")
+	if basicPath.Name != "" && rtspPath.Name != "" && recordingPath.Name != "" {
+		fmt.Println("✅ All factory path configurations created successfully")
 	}
 
 	fmt.Println("\n✅ Advanced operations example completed!")

@@ -18,43 +18,8 @@ func NewPathHelper() *PathHelper {
 	return &PathHelper{}
 }
 
-// CreateBasicPath creates a basic path configuration with common settings
-func (h *PathHelper) CreateBasicPath() *conf.OptionalPath {
-	// Since OptionalPath uses reflection, we'll create it empty and let the caller set fields
-	return &conf.OptionalPath{}
-}
-
-// CreateRTSPPath creates a path configuration optimized for RTSP sources
-func (h *PathHelper) CreateRTSPPath(rtspURL string) *conf.OptionalPath {
-	// For now, return a basic path - the actual field setting would need JSON manipulation
-	// due to OptionalPath's dynamic structure
-	return h.CreateBasicPath()
-}
-
-// CreateRTMPPath creates a path configuration optimized for RTMP sources
-func (h *PathHelper) CreateRTMPPath(rtmpURL string) *conf.OptionalPath {
-	return h.CreateBasicPath()
-}
-
-// CreateHLSPath creates a path configuration optimized for HLS sources
-func (h *PathHelper) CreateHLSPath(hlsURL string) *conf.OptionalPath {
-	return h.CreateBasicPath()
-}
-
-// CreateWebRTCPath creates a path configuration optimized for WebRTC sources
-func (h *PathHelper) CreateWebRTCPath() *conf.OptionalPath {
-	return h.CreateBasicPath()
-}
-
-// CreateRecordingPath creates a path configuration with recording enabled
-func (h *PathHelper) CreateRecordingPath(recordPath string, format conf.RecordFormat) *conf.OptionalPath {
-	return h.CreateBasicPath()
-}
-
-// CreateOnDemandPath creates a path configuration with on-demand activation
-func (h *PathHelper) CreateOnDemandPath(runOnDemandCmd string) *conf.OptionalPath {
-	return h.CreateBasicPath()
-}
+// Note: Path creation helpers have been moved to models.go factory methods
+// Use NewSimplePathConfig, NewRTSPPathConfig, NewPublisherPathConfig, NewOnDemandPathConfig instead
 
 // PathValidator provides validation methods for path configurations
 type PathValidator struct{}

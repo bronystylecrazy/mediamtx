@@ -10,164 +10,79 @@ import (
 
 // Core-level convenience methods for path management
 
-// CreateSimplePath creates a path with simple parameters
-func (p *Core) CreateSimplePath(name, source string, enableRecording bool) error {
-	builder := NewPathConfigBuilder().
-		SetName(name).
-		SetSource(source).
-		SetRecording(enableRecording)
-	
-	if enableRecording {
-		builder = builder.
-			SetRecordPath(fmt.Sprintf("/recordings/%s", name)).
-			SetRecordFormat("fmp4")
-	}
-
+// createPathFromBuilder is a helper that converts builder to OptionalPath and creates the path
+func (p *Core) createPathFromBuilder(name string, builder *PathConfigBuilder) error {
 	pathConfig := builder.Build()
 	optPath, err := pathConfig.ToOptionalPath()
 	if err != nil {
 		return fmt.Errorf("failed to convert path config: %v", err)
 	}
-
+	
 	pathManager := p.GetPathCRUDManager()
 	return pathManager.CreatePath(name, optPath)
+}
+
+// updatePathFromBuilder is a helper that converts builder to OptionalPath and updates the path
+func (p *Core) updatePathFromBuilder(name string, builder *PathConfigBuilder) error {
+	pathConfig := builder.Build()
+	optPath, err := pathConfig.ToOptionalPath()
+	if err != nil {
+		return fmt.Errorf("failed to convert path config: %v", err)
+	}
+	
+	pathManager := p.GetPathCRUDManager()
+	return pathManager.UpdatePath(name, optPath)
+}
+
+// CreateSimplePath creates a path with simple parameters
+func (p *Core) CreateSimplePath(name, source string, enableRecording bool) error {
+	builder := NewSimplePathConfig(name, source, enableRecording)
+	return p.createPathFromBuilder(name, builder)
 }
 
 // CreateRTSPPath creates a path configured for RTSP source
 func (p *Core) CreateRTSPPath(name, rtspURL string, enableRecording bool) error {
-	builder := NewPathConfigBuilder().
-		SetName(name).
-		SetSource(rtspURL).
-		SetRecording(enableRecording).
-		SetRTSPTransport("automatic").
-		SetSourceOnDemand(false)
-	
-	if enableRecording {
-		builder = builder.
-			SetRecordPath(fmt.Sprintf("/recordings/%s", name)).
-			SetRecordFormat("fmp4")
-	}
-
-	pathConfig := builder.Build()
-	optPath, err := pathConfig.ToOptionalPath()
-	if err != nil {
-		return fmt.Errorf("failed to convert RTSP path config: %v", err)
-	}
-
-	pathManager := p.GetPathCRUDManager()
-	return pathManager.CreatePath(name, optPath)
+	builder := NewRTSPPathConfig(name, rtspURL, enableRecording)
+	return p.createPathFromBuilder(name, builder)
 }
 
 // CreateRTMPPath creates a path configured for RTMP source
 func (p *Core) CreateRTMPPath(name, rtmpURL string, enableRecording bool) error {
-	builder := NewPathConfigBuilder().
-		SetName(name).
-		SetSource(rtmpURL).
-		SetRecording(enableRecording).
-		SetSourceOnDemand(false)
-	
-	if enableRecording {
-		builder = builder.
-			SetRecordPath(fmt.Sprintf("/recordings/%s", name)).
-			SetRecordFormat("fmp4")
-	}
-
-	pathConfig := builder.Build()
-	optPath, err := pathConfig.ToOptionalPath()
-	if err != nil {
-		return fmt.Errorf("failed to convert RTMP path config: %v", err)
-	}
-
-	pathManager := p.GetPathCRUDManager()
-	return pathManager.CreatePath(name, optPath)
+	builder := NewSimplePathConfig(name, rtmpURL, enableRecording).SetSourceOnDemand(false)
+	return p.createPathFromBuilder(name, builder)
 }
 
 // CreatePublisherPath creates a path that accepts publishers
 func (p *Core) CreatePublisherPath(name string, enableRecording bool) error {
-	builder := NewPathConfigBuilder().
-		SetName(name).
-		SetSource("publisher").
-		SetRecording(enableRecording)
-	
-	if enableRecording {
-		builder = builder.
-			SetRecordPath(fmt.Sprintf("/recordings/%s", name)).
-			SetRecordFormat("fmp4")
-	}
-
-	pathConfig := builder.Build()
-	optPath, err := pathConfig.ToOptionalPath()
-	if err != nil {
-		return fmt.Errorf("failed to convert publisher path config: %v", err)
-	}
-
-	pathManager := p.GetPathCRUDManager()
-	return pathManager.CreatePath(name, optPath)
+	builder := NewPublisherPathConfig(name, enableRecording)
+	return p.createPathFromBuilder(name, builder)
 }
 
 // CreateOnDemandPath creates a path with on-demand activation
 func (p *Core) CreateOnDemandPath(name, source, command string) error {
-	pathConfig := NewPathConfigBuilder().
-		SetName(name).
-		SetSource(source).
-		SetSourceOnDemand(true).
-		SetRunOnDemand(command).
-		Build()
-
-	optPath, err := pathConfig.ToOptionalPath()
-	if err != nil {
-		return fmt.Errorf("failed to convert on-demand path config: %v", err)
-	}
-
-	pathManager := p.GetPathCRUDManager()
-	return pathManager.CreatePath(name, optPath)
+	builder := NewOnDemandPathConfig(name, source, command)
+	return p.createPathFromBuilder(name, builder)
 }
 
 // UpdatePathSource updates the source of an existing path
 func (p *Core) UpdatePathSource(name, newSource string) error {
-	pathConfig := NewPathConfigBuilder().
-		SetSource(newSource).
-		Build()
-
-	optPath, err := pathConfig.ToOptionalPath()
-	if err != nil {
-		return fmt.Errorf("failed to convert source update config: %v", err)
-	}
-
-	pathManager := p.GetPathCRUDManager()
-	return pathManager.UpdatePath(name, optPath)
+	builder := NewPathConfigBuilder().SetSource(newSource)
+	return p.updatePathFromBuilder(name, builder)
 }
 
 // EnablePathRecording enables recording for a path
 func (p *Core) EnablePathRecording(name, recordPath string) error {
-	pathConfig := NewPathConfigBuilder().
+	builder := NewPathConfigBuilder().
 		SetRecording(true).
 		SetRecordPath(recordPath).
-		SetRecordFormat("fmp4").
-		Build()
-
-	optPath, err := pathConfig.ToOptionalPath()
-	if err != nil {
-		return fmt.Errorf("failed to convert recording config: %v", err)
-	}
-
-	pathManager := p.GetPathCRUDManager()
-	return pathManager.UpdatePath(name, optPath)
+		SetRecordFormat("fmp4")
+	return p.updatePathFromBuilder(name, builder)
 }
 
 // DisablePathRecording disables recording for a path
 func (p *Core) DisablePathRecording(name string) error {
-	pathConfig := NewPathConfigBuilder().
-		SetRecording(false).
-		Build()
-
-	optPath, err := pathConfig.ToOptionalPath()
-	if err != nil {
-		return fmt.Errorf("failed to convert recording disable config: %v", err)
-	}
-
-	pathManager := p.GetPathCRUDManager()
-	return pathManager.UpdatePath(name, optPath)
+	builder := NewPathConfigBuilder().SetRecording(false)
+	return p.updatePathFromBuilder(name, builder)
 }
 
 // GetPathInfo returns detailed information about a path (both config and runtime)
@@ -342,54 +257,50 @@ func (p *Core) IsPathActive(name string) bool {
 func (p *Core) ClonePath(sourceName, targetName string) error {
 	pathManager := p.GetPathCRUDManager()
 	
-	// Get the source path
+	// Get the source path and convert to OptionalPath directly
 	sourcePath, err := pathManager.GetPath(sourceName)
 	if err != nil {
 		return fmt.Errorf("failed to get source path '%s': %v", sourceName, err)
 	}
 
-	// Convert source path to PathConf and create new OptionalPath
+	// Convert to JSON and back to OptionalPath for cloning
 	jsonData, err := json.Marshal(sourcePath)
 	if err != nil {
 		return fmt.Errorf("failed to marshal source path: %v", err)
 	}
 
-	var pathConf PathConf
-	if err := json.Unmarshal(jsonData, &pathConf); err != nil {
-		return fmt.Errorf("failed to unmarshal to PathConf: %v", err)
+	var optPath conf.OptionalPath
+	if err := json.Unmarshal(jsonData, &optPath); err != nil {
+		return fmt.Errorf("failed to unmarshal path config: %v", err)
 	}
 
-	// Update name to target name
-	pathConf.Name = targetName
+	// Create the cloned path
+	return pathManager.CreatePath(targetName, &optPath)
+}
 
-	// Convert to OptionalPath
-	optPath, err := pathConf.ToOptionalPath()
-	if err != nil {
-		return fmt.Errorf("failed to convert to OptionalPath: %v", err)
+// pathFromJSON is a helper that parses JSON config to OptionalPath
+func (p *Core) pathFromJSON(jsonConfig string) (*conf.OptionalPath, error) {
+	var optPath conf.OptionalPath
+	if err := json.Unmarshal([]byte(jsonConfig), &optPath); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal JSON config: %v", err)
 	}
-
-	// Create the new path
-	return pathManager.CreatePath(targetName, optPath)
+	return &optPath, nil
 }
 
 // UpdatePathFromJSON updates a path using JSON configuration
 func (p *Core) UpdatePathFromJSON(name string, jsonConfig string) error {
-	var optPath conf.OptionalPath
-	if err := json.Unmarshal([]byte(jsonConfig), &optPath); err != nil {
-		return fmt.Errorf("failed to unmarshal JSON config: %v", err)
+	optPath, err := p.pathFromJSON(jsonConfig)
+	if err != nil {
+		return err
 	}
-
-	pathManager := p.GetPathCRUDManager()
-	return pathManager.UpdatePath(name, &optPath)
+	return p.GetPathCRUDManager().UpdatePath(name, optPath)
 }
 
 // CreatePathFromJSON creates a path using JSON configuration
 func (p *Core) CreatePathFromJSON(name string, jsonConfig string) error {
-	var optPath conf.OptionalPath
-	if err := json.Unmarshal([]byte(jsonConfig), &optPath); err != nil {
-		return fmt.Errorf("failed to unmarshal JSON config: %v", err)
+	optPath, err := p.pathFromJSON(jsonConfig)
+	if err != nil {
+		return err
 	}
-
-	pathManager := p.GetPathCRUDManager()
-	return pathManager.CreatePath(name, &optPath)
+	return p.GetPathCRUDManager().CreatePath(name, optPath)
 }

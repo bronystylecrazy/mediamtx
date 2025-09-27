@@ -75,7 +75,7 @@ func ExamplePathCRUDUsage() {
 
 // ExamplePathHelperUsage demonstrates helper utilities
 func ExamplePathHelperUsage() {
-	helper := NewPathHelper()
+	_ = NewPathHelper() // Keep for other functionality
 	validator := NewPathValidator()
 	analyzer := NewPathAnalyzer()
 
@@ -105,12 +105,12 @@ func ExamplePathHelperUsage() {
 		}
 	}
 
-	// Create path configurations
-	basicPath := helper.CreateBasicPath()
-	rtspPath := helper.CreateRTSPPath("rtsp://camera.example.com/stream")
+	// Create path configurations using new factory methods
+	basicPath := NewSimplePathConfig("example_basic", "publisher", false).Build()
+	rtspPath := NewRTSPPathConfig("example_rtsp", "rtsp://camera.example.com/stream", false).Build()
 	
-	fmt.Printf("Created basic path: %v\n", basicPath != nil)
-	fmt.Printf("Created RTSP path: %v\n", rtspPath != nil)
+	fmt.Printf("Created basic path: %v\n", basicPath.Name != "")
+	fmt.Printf("Created RTSP path: %v\n", rtspPath.Name != "")
 
 	// Analyze paths (requires actual Path objects, not OptionalPath)
 	samplePath := &conf.Path{

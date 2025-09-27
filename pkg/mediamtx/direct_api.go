@@ -708,33 +708,46 @@ func NewOptionalPath(source string) *conf.OptionalPath {
 	return NewOptionalPathWithOptions(PathOptions{Source: source})
 }
 
+// NewOptionalPublisherPath creates a new OptionalPath configured to accept incoming streams
+// This is useful when you want to create a path that accepts streams pushed to it
+// rather than pulling from an external source
+func NewOptionalPublisherPath(name string) *conf.OptionalPath {
+	return NewOptionalPathWithOptions(PathOptions{
+		Name:   name,
+		Source: "publisher",
+	})
+}
+
 // NewOptionalPathWithOptions creates a new OptionalPath with typed options
 func NewOptionalPathWithOptions(options PathOptions) *conf.OptionalPath {
 	optPath := &conf.OptionalPath{}
 	
-	// Create a proper conf.Path struct instead of a map to avoid reflection issues
-	path := &conf.Path{}
-	
-	// Use JSON marshaling/unmarshaling for automatic field mapping
-	// First convert PathOptions to JSON, then unmarshal into conf.Path
+	// Convert PathOptions to JSON
 	optionsJSON, err := json.Marshal(options)
 	if err != nil {
-		// Fallback to basic path if marshaling fails
-		path.Source = options.Source
-		optPath.Values = path
+		// Fallback to basic publisher path if marshaling fails
+		fallbackJSON := []byte(`{"source":"publisher"}`)
+		if options.Source != "" {
+			fallbackJSON, _ = json.Marshal(map[string]string{"source": options.Source})
+		}
+		_ = json.Unmarshal(fallbackJSON, optPath)
 		return optPath
 	}
 	
-	// Unmarshal directly into the conf.Path struct
-	if err := json.Unmarshal(optionsJSON, path); err != nil {
-		// Fallback to basic path if unmarshaling fails
-		path.Source = options.Source
-		optPath.Values = path
+	// Use OptionalPath's own UnmarshalJSON method which:
+	// 1. Creates the proper dynamic struct with pointer fields
+	// 2. Uses jsonwrapper.Unmarshal for proper validation
+	// 3. Triggers setDefaults() through the MediaMTX configuration system
+	if err := json.Unmarshal(optionsJSON, optPath); err != nil {
+		// Fallback to basic publisher path if unmarshaling fails
+		fallbackJSON := []byte(`{"source":"publisher"}`)
+		if options.Source != "" {
+			fallbackJSON, _ = json.Marshal(map[string]string{"source": options.Source})
+		}
+		_ = json.Unmarshal(fallbackJSON, optPath)
 		return optPath
 	}
 	
-	// Set the Values field to the proper conf.Path struct
-	optPath.Values = path
 	return optPath
 }
 

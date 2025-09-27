@@ -336,7 +336,15 @@ func (api *MediaMTXAPI) AddPathConfig(name string, pathConf *conf.OptionalPath) 
 	}
 	
 	api.core.Conf = newConf
-	api.core.APIConfigSet(newConf)
+	
+	// Try to notify Core about config change with timeout to prevent blocking
+	select {
+	case api.core.ChAPIConfigSet <- newConf:
+		// Successfully sent config update
+	default:
+		// Core event loop not running, update config but skip notification
+		// This allows adding paths before Core.Run() is called
+	}
 	
 	return nil
 }
@@ -357,7 +365,15 @@ func (api *MediaMTXAPI) UpdatePathConfig(name string, pathConf *conf.OptionalPat
 	}
 	
 	api.core.Conf = newConf
-	api.core.APIConfigSet(newConf)
+	
+	// Try to notify Core about config change with timeout to prevent blocking
+	select {
+	case api.core.ChAPIConfigSet <- newConf:
+		// Successfully sent config update
+	default:
+		// Core event loop not running, update config but skip notification
+		// This allows updating paths before Core.Run() is called
+	}
 	
 	return nil
 }
@@ -378,7 +394,15 @@ func (api *MediaMTXAPI) ReplacePathConfig(name string, pathConf *conf.OptionalPa
 	}
 	
 	api.core.Conf = newConf
-	api.core.APIConfigSet(newConf)
+	
+	// Try to notify Core about config change with timeout to prevent blocking
+	select {
+	case api.core.ChAPIConfigSet <- newConf:
+		// Successfully sent config update
+	default:
+		// Core event loop not running, update config but skip notification
+		// This allows replacing paths before Core.Run() is called
+	}
 	
 	return nil
 }
@@ -399,7 +423,15 @@ func (api *MediaMTXAPI) DeletePathConfig(name string) error {
 	}
 	
 	api.core.Conf = newConf
-	api.core.APIConfigSet(newConf)
+	
+	// Try to notify Core about config change with timeout to prevent blocking
+	select {
+	case api.core.ChAPIConfigSet <- newConf:
+		// Successfully sent config update
+	default:
+		// Core event loop not running, update config but skip notification
+		// This allows deleting paths before Core.Run() is called
+	}
 	
 	return nil
 }

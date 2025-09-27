@@ -33,8 +33,6 @@ import (
 	"github.com/bluenviron/mediamtx/internal/servers/webrtc"
 )
 
-type LogLevel = logger.Level
-
 var defaultConfPaths = []string{
 	"rtsp-simple-server.yml",
 	"mediamtx.yml",

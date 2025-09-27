@@ -16,13 +16,15 @@ import (
 	"github.com/bluenviron/gortsplib/v5"
 	"github.com/gin-gonic/gin"
 
-	"github.com/bluenviron/mediamtx/internal/auth"
-	"github.com/bluenviron/mediamtx/internal/conf"
+	"github.com/bluenviron/mediamtx/pkg/mediamtx/auth"
+	"github.com/bluenviron/mediamtx/pkg/mediamtx/conf"
+	"github.com/bluenviron/mediamtx/pkg/mediamtx/externalcmd"
+	"github.com/bluenviron/mediamtx/pkg/mediamtx/logger"
+	"github.com/bluenviron/mediamtx/pkg/mediamtx/metrics"
+	"github.com/bluenviron/mediamtx/pkg/mediamtx/playback"
+	
+	// Keep internal packages that we haven't exposed yet
 	"github.com/bluenviron/mediamtx/internal/confwatcher"
-	"github.com/bluenviron/mediamtx/internal/externalcmd"
-	"github.com/bluenviron/mediamtx/internal/logger"
-	"github.com/bluenviron/mediamtx/internal/metrics"
-	"github.com/bluenviron/mediamtx/internal/playback"
 	"github.com/bluenviron/mediamtx/internal/pprof"
 	"github.com/bluenviron/mediamtx/internal/recordcleaner"
 	"github.com/bluenviron/mediamtx/internal/rlimit"

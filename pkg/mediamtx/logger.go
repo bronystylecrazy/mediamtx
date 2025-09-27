@@ -1,12 +1,12 @@
 package mediamtx
 
-import "github.com/bluenviron/mediamtx/internal/logger"
+import "github.com/bluenviron/mediamtx/pkg/mediamtx/logger"
 
 type LogLevel = logger.Level
 
 const (
-	Debug LogLevel = iota + 1
-	Info
-	Warn
-	Error
+	Debug = logger.Debug
+	Info  = logger.Info
+	Warn  = logger.Warn
+	Error = logger.Error
 )

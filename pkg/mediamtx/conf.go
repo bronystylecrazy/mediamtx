@@ -1,5 +1,5 @@
 package mediamtx
 
-import "github.com/bluenviron/mediamtx/internal/conf"
+import "github.com/bluenviron/mediamtx/pkg/mediamtx/conf"
 
-type Conf conf.Conf
+type Conf = conf.Conf

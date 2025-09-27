@@ -6,14 +6,16 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/bluenviron/mediamtx/internal/auth"
-	"github.com/bluenviron/mediamtx/internal/conf"
-	"github.com/bluenviron/mediamtx/internal/defs"
-	"github.com/bluenviron/mediamtx/internal/externalcmd"
-	"github.com/bluenviron/mediamtx/internal/logger"
-	"github.com/bluenviron/mediamtx/internal/metrics"
+	"github.com/bluenviron/mediamtx/pkg/mediamtx/auth"
+	"github.com/bluenviron/mediamtx/pkg/mediamtx/conf"
+	"github.com/bluenviron/mediamtx/pkg/mediamtx/defs"
+	"github.com/bluenviron/mediamtx/pkg/mediamtx/externalcmd"
+	"github.com/bluenviron/mediamtx/pkg/mediamtx/logger"
+	"github.com/bluenviron/mediamtx/pkg/mediamtx/metrics"
+	"github.com/bluenviron/mediamtx/pkg/mediamtx/stream"
+	
+	// Keep internal packages that we haven't exposed yet
 	"github.com/bluenviron/mediamtx/internal/servers/hls"
-	"github.com/bluenviron/mediamtx/internal/stream"
 )
 
 func PathConfCanBeUpdated(oldPathConf *conf.Path, newPathConf *conf.Path) bool {

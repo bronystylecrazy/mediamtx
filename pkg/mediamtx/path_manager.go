@@ -16,7 +16,7 @@ import (
 	"github.com/bluenviron/mediamtx/internal/stream"
 )
 
-func pathConfCanBeUpdated(oldPathConf *conf.Path, newPathConf *conf.Path) bool {
+func PathConfCanBeUpdated(oldPathConf *conf.Path, newPathConf *conf.Path) bool {
 	clone := oldPathConf.Clone()
 
 	clone.Name = newPathConf.Name
@@ -207,7 +207,7 @@ func (pm *pathManager) doReloadConf(newPaths map[string]*conf.Path) {
 	for confName, pathConf := range pm.pathConfs {
 		if newPath, ok := newPaths[confName]; ok {
 			if !newPath.Equal(pathConf) {
-				if pathConfCanBeUpdated(pathConf, newPath) {
+				if PathConfCanBeUpdated(pathConf, newPath) {
 					confsToReload[confName] = struct{}{}
 				} else {
 					confsToRecreate[confName] = struct{}{}
@@ -230,7 +230,7 @@ func (pm *pathManager) doReloadConf(newPaths map[string]*conf.Path) {
 		if newPathConf.Name != pathData.confName {
 			// path config can be hot reloaded
 			oldPathConf := pm.pathConfs[pathData.confName]
-			if pathConfCanBeUpdated(oldPathConf, newPathConf) {
+			if PathConfCanBeUpdated(oldPathConf, newPathConf) {
 				pm.paths[path.name].confName = newPathConf.Name
 				go path.reloadConf(newPathConf)
 				continue
@@ -472,7 +472,7 @@ func (pm *pathManager) pathReady(pa *path) {
 	select {
 	case pm.chPathReady <- pa:
 	case <-pm.ctx.Done():
-	case <-pa.ctx.Done(): // in case pathManager is blocked by path.wait()
+	case <-pa.ctx.Done(): // in case PathManager is blocked by path.wait()
 	}
 }
 
@@ -481,7 +481,7 @@ func (pm *pathManager) pathNotReady(pa *path) {
 	select {
 	case pm.chPathNotReady <- pa:
 	case <-pm.ctx.Done():
-	case <-pa.ctx.Done(): // in case pathManager is blocked by path.wait()
+	case <-pa.ctx.Done(): // in case PathManager is blocked by path.wait()
 	}
 }
 
@@ -490,7 +490,7 @@ func (pm *pathManager) closePath(pa *path) {
 	select {
 	case pm.chClosePath <- pa:
 	case <-pm.ctx.Done():
-	case <-pa.ctx.Done(): // in case pathManager is blocked by path.wait()
+	case <-pa.ctx.Done(): // in case PathManager is blocked by path.wait()
 	}
 }
 

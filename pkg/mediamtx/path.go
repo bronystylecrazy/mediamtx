@@ -864,7 +864,7 @@ func (pa *path) StaticSourceHandlerSetReady(
 
 	// this avoids:
 	// - invalid requests sent after the source has been terminated
-	// - deadlocks caused by <-done inside stop()
+	// - deadlocks caused by <-Done inside stop()
 	case <-ctx.Done():
 		req.Res <- defs.PathSourceStaticSetReadyRes{Err: fmt.Errorf("terminated")}
 	}
@@ -882,7 +882,7 @@ func (pa *path) StaticSourceHandlerSetNotReady(
 
 	// this avoids:
 	// - invalid requests sent after the source has been terminated
-	// - deadlocks caused by <-done inside stop()
+	// - deadlocks caused by <-Done inside stop()
 	case <-ctx.Done():
 		close(req.Res)
 	}

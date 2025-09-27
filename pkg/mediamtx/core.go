@@ -4,7 +4,6 @@ package mediamtx
 import (
 	"context"
 	_ "embed"
-	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -94,6 +93,9 @@ type Core struct {
 	// api             *api.API
 	ConfWatcher *confwatcher.ConfWatcher
 
+	// Options
+	opts Options
+
 	// in
 	ChAPIConfigSet chan *conf.Conf
 
@@ -101,8 +103,14 @@ type Core struct {
 	Done chan struct{}
 }
 
+type LogFunc = func(level LogLevel, format string, args ...interface{})
+
+type Options struct {
+	LogFunc LogFunc
+}
+
 // New allocates a Core.
-func New() (*Core, error) {
+func New(opts Options) (*Core, error) {
 
 	ctx, ctxCancel := context.WithCancel(context.Background())
 
@@ -111,13 +119,13 @@ func New() (*Core, error) {
 		ctxCancel:      ctxCancel,
 		ChAPIConfigSet: make(chan *conf.Conf),
 		Done:           make(chan struct{}),
+		opts:           opts,
 	}
 
 	tempLogger, _ := logger.New(logger.Warn, []logger.Destination{logger.DestinationStdout}, "", "")
 
 	cfg, confPath, err := conf.Load(cli.Confpath, defaultConfPaths, tempLogger)
 	if err != nil {
-		fmt.Printf("ERR: %s\n", err)
 		return nil, err
 	}
 
@@ -132,8 +140,6 @@ func (p *Core) Run(ctx context.Context) error {
 	if err != nil {
 		if p.Logger != nil {
 			p.Log(logger.Error, "%s", err)
-		} else {
-			fmt.Printf("ERR: %s\n", err)
 		}
 		p.closeResources(nil, false)
 		return err
@@ -157,7 +163,11 @@ func (p *Core) Wait() {
 
 // Log implements logger.Writer.
 func (p *Core) Log(level LogLevel, format string, args ...interface{}) {
-	p.Logger.Log(level, format, args...)
+	if p.opts.LogFunc == nil {
+		p.Logger.Log(level, format, args...)
+		return
+	}
+	p.opts.LogFunc(level, format, args...)
 }
 
 func (p *Core) run() {

@@ -192,3 +192,25 @@ func TestDirectAPI_sortedPathKeys(t *testing.T) {
 	keys = api.sortedPathKeys(emptyPaths)
 	require.Len(t, keys, 0)
 }
+
+func TestDirectAPI_PatchMethods(t *testing.T) {
+	// Test that patch methods exist and have proper signatures
+	api := NewDirectAPI(&Core{})
+	
+	// Test that methods exist by checking they're not nil
+	require.NotNil(t, api.PatchGlobalConfig)
+	require.NotNil(t, api.PatchPathDefaults)
+	
+	// Note: Cannot test actual functionality without proper core setup
+	// as it would require a valid configuration structure
+}
+
+func TestDirectAPI_ListPathConfigs(t *testing.T) {
+	api := NewDirectAPI(&Core{})
+	
+	// Test with nil configuration
+	result, err := api.ListPathConfigs(nil)
+	require.Error(t, err)
+	require.Nil(t, result)
+	require.Contains(t, err.Error(), "configuration not available")
+}

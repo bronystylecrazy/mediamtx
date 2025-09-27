@@ -56,6 +56,13 @@ type APIResult struct {
 	Error      error
 }
 
+// DirectAPIPathConfList represents a list of path configurations for direct API
+type DirectAPIPathConfList struct {
+	ItemCount int                  `json:"itemCount"`
+	PageCount int                  `json:"pageCount"`
+	Items     []map[string]interface{} `json:"items"`
+}
+
 // =============================================================================
 // CONFIGURATION MANAGEMENT
 // =============================================================================
@@ -88,6 +95,30 @@ func (api *DirectAPI) UpdateGlobalConfig(newConf *conf.Conf) error {
 	return nil
 }
 
+// PatchGlobalConfig patches the global configuration (equivalent to PATCH /config/global/patch)
+func (api *DirectAPI) PatchGlobalConfig(optionalGlobal *conf.OptionalGlobal) error {
+	api.mutex.Lock()
+	defer api.mutex.Unlock()
+	
+	newConf := api.core.Conf.Clone()
+	
+	// Apply the patch
+	newConf.PatchGlobal(optionalGlobal)
+	
+	// Validate the new configuration
+	if err := newConf.Validate(nil); err != nil {
+		return fmt.Errorf("configuration validation failed: %v", err)
+	}
+	
+	// Apply configuration
+	api.core.Conf = newConf
+	
+	// Use goroutine like the original API since config reload can cause shutdown
+	go api.core.APIConfigSet(newConf)
+	
+	return nil
+}
+
 // GetPathDefaults returns the default path configuration
 func (api *DirectAPI) GetPathDefaults() *conf.Path {
 	return &conf.Path{}
@@ -113,13 +144,34 @@ func (api *DirectAPI) UpdatePathDefaults(defaults *conf.OptionalPath) error {
 	return nil
 }
 
+// PatchPathDefaults patches the default path configuration (equivalent to PATCH /config/pathdefaults/patch)
+func (api *DirectAPI) PatchPathDefaults(optionalPath *conf.OptionalPath) error {
+	api.mutex.Lock()
+	defer api.mutex.Unlock()
+	
+	newConf := api.core.Conf.Clone()
+	
+	// Apply the patch to path defaults
+	newConf.PatchPathDefaults(optionalPath)
+	
+	// Validate the new configuration
+	if err := newConf.Validate(nil); err != nil {
+		return fmt.Errorf("configuration validation failed: %v", err)
+	}
+	
+	// Apply configuration
+	api.core.Conf = newConf
+	api.core.APIConfigSet(newConf)
+	
+	return nil
+}
+
 // =============================================================================
 // PATH CONFIGURATION MANAGEMENT
 // =============================================================================
 
 // ListPathConfigs returns a list of all configured paths with pagination
-// TODO: Fix type compatibility issues between internal and exposed types
-/*func (api *DirectAPI) ListPathConfigs(pagination *PaginationParams) (*defs.APIPathConfList, error) {
+func (api *DirectAPI) ListPathConfigs(pagination *PaginationParams) (*DirectAPIPathConfList, error) {
 	api.mutex.RLock()
 	conf := api.core.Conf
 	api.mutex.RUnlock()
@@ -130,12 +182,24 @@ func (api *DirectAPI) UpdatePathDefaults(defaults *conf.OptionalPath) error {
 	
 	// Create sorted list of paths
 	sortedNames := api.sortedPathKeys(conf.Paths)
-	data := &defs.APIPathConfList{
-		Items: make([]*conf.Path, len(sortedNames)),
+	data := &DirectAPIPathConfList{
+		Items: []map[string]interface{}{},
 	}
 	
-	for i, name := range sortedNames {
-		data.Items[i] = conf.Paths[name]
+	for _, name := range sortedNames {
+		// Convert path to map for JSON serialization
+		pathMap := map[string]interface{}{
+			"name":                       name,
+			"source":                     conf.Paths[name].Source,
+			"record":                     conf.Paths[name].Record,
+			"recordPath":                 conf.Paths[name].RecordPath,
+			"recordFormat":               conf.Paths[name].RecordFormat,
+			"maxReaders":                 conf.Paths[name].MaxReaders,
+			"sourceOnDemand":             conf.Paths[name].SourceOnDemand,
+			"sourceOnDemandStartTimeout": conf.Paths[name].SourceOnDemandStartTimeout,
+			"sourceOnDemandCloseAfter":   conf.Paths[name].SourceOnDemandCloseAfter,
+		}
+		data.Items = append(data.Items, pathMap)
 	}
 	
 	data.ItemCount = len(data.Items)
@@ -149,7 +213,7 @@ func (api *DirectAPI) UpdatePathDefaults(defaults *conf.OptionalPath) error {
 	}
 	
 	return data, nil
-}*/
+}
 
 // GetPathConfig returns the configuration for a specific path
 func (api *DirectAPI) GetPathConfig(name string) (*conf.Path, error) {

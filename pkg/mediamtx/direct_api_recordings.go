@@ -220,25 +220,60 @@ type RecordingInfo struct {
 // =============================================================================
 
 // StartRecording starts recording for a specific path
-// TODO: Fix field name compatibility issues
-/*func (api *DirectAPI) StartRecording(pathName string) error {
-	// This would typically be done by updating the path configuration
-	pathConf := &conf.OptionalPath{
-		Record: &[]bool{true}[0], // Create a pointer to true
-	}
+func (api *DirectAPI) StartRecording(pathName string) error {
+	api.mutex.Lock()
+	defer api.mutex.Unlock()
 
-	return api.UpdatePathConfig(pathName, pathConf)
+	// Get current configuration
+	newConf := api.core.Conf.Clone()
+	
+	// Check if path exists
+	pathConfig, exists := newConf.Paths[pathName]
+	if !exists {
+		return fmt.Errorf("path '%s' not found", pathName)
+	}
+	
+	// Update recording flag directly
+	pathConfig.Record = true
+	
+	// Validate and apply
+	if err := newConf.Validate(nil); err != nil {
+		return fmt.Errorf("configuration validation failed: %v", err)
+	}
+	
+	api.core.Conf = newConf
+	api.core.APIConfigSet(newConf)
+	
+	return nil
 }
 
 // StopRecording stops recording for a specific path
 func (api *DirectAPI) StopRecording(pathName string) error {
-	// This would typically be done by updating the path configuration
-	pathConf := &conf.OptionalPath{
-		Record: &[]bool{false}[0], // Create a pointer to false
-	}
+	api.mutex.Lock()
+	defer api.mutex.Unlock()
 
-	return api.UpdatePathConfig(pathName, pathConf)
-}*/
+	// Get current configuration
+	newConf := api.core.Conf.Clone()
+	
+	// Check if path exists
+	pathConfig, exists := newConf.Paths[pathName]
+	if !exists {
+		return fmt.Errorf("path '%s' not found", pathName)
+	}
+	
+	// Update recording flag directly
+	pathConfig.Record = false
+	
+	// Validate and apply
+	if err := newConf.Validate(nil); err != nil {
+		return fmt.Errorf("configuration validation failed: %v", err)
+	}
+	
+	api.core.Conf = newConf
+	api.core.APIConfigSet(newConf)
+	
+	return nil
+}
 
 // IsRecording checks if a path is currently recording
 func (api *DirectAPI) IsRecording(pathName string) (bool, error) {
@@ -251,14 +286,32 @@ func (api *DirectAPI) IsRecording(pathName string) (bool, error) {
 }
 
 // SetRecordingPath updates the recording path for a specific path
-// TODO: Fix field name compatibility issues
-/*func (api *DirectAPI) SetRecordingPath(pathName, recordingPath string) error {
-	pathConf := &conf.OptionalPath{
-		RecordPath: &recordingPath,
-	}
+func (api *DirectAPI) SetRecordingPath(pathName, recordingPath string) error {
+	api.mutex.Lock()
+	defer api.mutex.Unlock()
 
-	return api.UpdatePathConfig(pathName, pathConf)
-}*/
+	// Get current configuration
+	newConf := api.core.Conf.Clone()
+	
+	// Check if path exists
+	pathConfig, exists := newConf.Paths[pathName]
+	if !exists {
+		return fmt.Errorf("path '%s' not found", pathName)
+	}
+	
+	// Update recording path directly
+	pathConfig.RecordPath = recordingPath
+	
+	// Validate and apply
+	if err := newConf.Validate(nil); err != nil {
+		return fmt.Errorf("configuration validation failed: %v", err)
+	}
+	
+	api.core.Conf = newConf
+	api.core.APIConfigSet(newConf)
+	
+	return nil
+}
 
 // GetRecordingPath returns the recording path for a specific path
 func (api *DirectAPI) GetRecordingPath(pathName string) (string, error) {

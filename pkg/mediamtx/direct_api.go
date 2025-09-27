@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -16,15 +17,100 @@ import (
 	"github.com/bluenviron/mediamtx/pkg/mediamtx/defs"
 )
 
-// DirectAPI provides programmatic access to MediaMTX functionality without HTTP/gin dependencies
-type DirectAPI struct {
+// MediaMTXAPIInterface defines the contract for MediaMTX API operations
+type MediaMTXAPIInterface interface {
+	// Configuration Management
+	GetGlobalConfig() (*conf.Conf, error)
+	UpdateGlobalConfig(newConf *conf.Conf) error
+	PatchGlobalConfig(optionalGlobal *conf.OptionalGlobal) error
+	GetPathDefaults() *conf.Path
+	UpdatePathDefaults(defaults *conf.OptionalPath) error
+	PatchPathDefaults(optionalPath *conf.OptionalPath) error
+
+	// Path Configuration Management
+	ListPathConfigs(pagination *PaginationParams) (*MediaMTXPathConfList, error)
+	GetPathConfig(name string) (*conf.Path, error)
+	AddPathConfig(name string, pathConf *conf.OptionalPath) error
+	UpdatePathConfig(name string, pathConf *conf.OptionalPath) error
+	ReplacePathConfig(name string, pathConf *conf.OptionalPath) error
+	DeletePathConfig(name string) error
+
+	// Runtime Path Information
+	ListActivePaths(pagination *PaginationParams) (*defs.APIPathList, error)
+	GetActivePath(name string) (*defs.APIPath, error)
+
+	// RTSP Server Management
+	GetRTSPConnections(pagination *PaginationParams) (*defs.APIRTSPConnsList, error)
+	GetRTSPConnection(id string) (*defs.APIRTSPConn, error)
+	GetRTSPSessions(pagination *PaginationParams) (*defs.APIRTSPSessionList, error)
+	GetRTSPSession(id string) (*defs.APIRTSPSession, error)
+	KickRTSPSession(id string) error
+
+	// RTMP Server Management
+	GetRTMPConnections(pagination *PaginationParams) (*defs.APIRTMPConnList, error)
+	GetRTMPConnection(id string) (*defs.APIRTMPConn, error)
+	KickRTMPConnection(id string) error
+
+	// RTMPS Server Management
+	GetRTMPSConnections(pagination *PaginationParams) (*defs.APIRTMPConnList, error)
+	GetRTMPSConnection(id string) (*defs.APIRTMPConn, error)
+	KickRTMPSConnection(id string) error
+
+	// HLS Server Management
+	GetHLSMuxers(pagination *PaginationParams) (*defs.APIHLSMuxerList, error)
+	GetHLSMuxer(name string) (*defs.APIHLSMuxer, error)
+
+	// WebRTC Server Management
+	GetWebRTCSessions(pagination *PaginationParams) (*defs.APIWebRTCSessionList, error)
+	GetWebRTCSession(id string) (*defs.APIWebRTCSession, error)
+	KickWebRTCSession(id string) error
+
+	// SRT Server Management
+	GetSRTConnections(pagination *PaginationParams) (*defs.APISRTConnList, error)
+	GetSRTConnection(id string) (*defs.APISRTConn, error)
+	KickSRTConnection(id string) error
+
+	// RTSPS Server Management
+	GetRTSPSConnections(pagination *PaginationParams) (*defs.APIRTSPConnsList, error)
+	GetRTSPSConnection(id string) (*defs.APIRTSPConn, error)
+	GetRTSPSSessions(pagination *PaginationParams) (*defs.APIRTSPSessionList, error)
+	GetRTSPSSession(id string) (*defs.APIRTSPSession, error)
+	KickRTSPSSession(id string) error
+
+	// Recording Management
+	GetRecordings(query *RecordingQuery, pagination *PaginationParams) (*defs.APIRecordingList, error)
+	GetRecording(pathName string) (*defs.APIRecording, error)
+	DeleteRecordingSegment(pathName string, segmentStart time.Time) error
+	GetRecordingsByPath(pathName string, pagination *PaginationParams) (*defs.APIRecordingList, error)
+	GetRecordingsByTimeRange(startTime, endTime time.Time, pagination *PaginationParams) (*defs.APIRecordingList, error)
+	GetRecordingInfo(pathName string) (*RecordingInfo, error)
+
+	// Recording Operations
+	StartRecording(pathName string) error
+	StopRecording(pathName string) error
+	IsRecording(pathName string) (bool, error)
+	SetRecordingPath(pathName, recordingPath string) error
+	GetRecordingPath(pathName string) (string, error)
+
+	// Authentication Management
+	Authenticate(req *auth.Request) *auth.Error
+	RefreshJWTJWKS()
+	CreateAuthRequest(user, pass, query, ip string) (*auth.Request, error)
+	ValidateAPIAccess(user, pass, ip string) error
+}
+
+// MediaMTXAPI provides programmatic access to MediaMTX functionality without HTTP/gin dependencies
+type MediaMTXAPI struct {
 	core        *Core
 	mutex       sync.RWMutex
 }
 
-// NewDirectAPI creates a new direct API instance
-func NewDirectAPI(core *Core) *DirectAPI {
-	return &DirectAPI{
+// Ensure MediaMTXAPI implements MediaMTXAPIInterface
+var _ MediaMTXAPIInterface = (*MediaMTXAPI)(nil)
+
+// NewMediaMTXAPI creates a new MediaMTX API instance
+func NewMediaMTXAPI(core *Core) *MediaMTXAPI {
+	return &MediaMTXAPI{
 		core: core,
 	}
 }
@@ -56,8 +142,8 @@ type APIResult struct {
 	Error      error
 }
 
-// DirectAPIPathConfList represents a list of path configurations for direct API
-type DirectAPIPathConfList struct {
+// MediaMTXPathConfList represents a list of path configurations for MediaMTX API
+type MediaMTXPathConfList struct {
 	ItemCount int                  `json:"itemCount"`
 	PageCount int                  `json:"pageCount"`
 	Items     []map[string]interface{} `json:"items"`
@@ -68,7 +154,7 @@ type DirectAPIPathConfList struct {
 // =============================================================================
 
 // GetGlobalConfig returns the current global configuration
-func (api *DirectAPI) GetGlobalConfig() (*conf.Conf, error) {
+func (api *MediaMTXAPI) GetGlobalConfig() (*conf.Conf, error) {
 	api.mutex.RLock()
 	defer api.mutex.RUnlock()
 	
@@ -79,7 +165,7 @@ func (api *DirectAPI) GetGlobalConfig() (*conf.Conf, error) {
 }
 
 // UpdateGlobalConfig updates the global configuration
-func (api *DirectAPI) UpdateGlobalConfig(newConf *conf.Conf) error {
+func (api *MediaMTXAPI) UpdateGlobalConfig(newConf *conf.Conf) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
 	
@@ -96,7 +182,7 @@ func (api *DirectAPI) UpdateGlobalConfig(newConf *conf.Conf) error {
 }
 
 // PatchGlobalConfig patches the global configuration (equivalent to PATCH /config/global/patch)
-func (api *DirectAPI) PatchGlobalConfig(optionalGlobal *conf.OptionalGlobal) error {
+func (api *MediaMTXAPI) PatchGlobalConfig(optionalGlobal *conf.OptionalGlobal) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
 	
@@ -120,12 +206,12 @@ func (api *DirectAPI) PatchGlobalConfig(optionalGlobal *conf.OptionalGlobal) err
 }
 
 // GetPathDefaults returns the default path configuration
-func (api *DirectAPI) GetPathDefaults() *conf.Path {
+func (api *MediaMTXAPI) GetPathDefaults() *conf.Path {
 	return &conf.Path{}
 }
 
 // UpdatePathDefaults updates the default path configuration
-func (api *DirectAPI) UpdatePathDefaults(defaults *conf.OptionalPath) error {
+func (api *MediaMTXAPI) UpdatePathDefaults(defaults *conf.OptionalPath) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
 	
@@ -145,7 +231,7 @@ func (api *DirectAPI) UpdatePathDefaults(defaults *conf.OptionalPath) error {
 }
 
 // PatchPathDefaults patches the default path configuration (equivalent to PATCH /config/pathdefaults/patch)
-func (api *DirectAPI) PatchPathDefaults(optionalPath *conf.OptionalPath) error {
+func (api *MediaMTXAPI) PatchPathDefaults(optionalPath *conf.OptionalPath) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
 	
@@ -171,7 +257,7 @@ func (api *DirectAPI) PatchPathDefaults(optionalPath *conf.OptionalPath) error {
 // =============================================================================
 
 // ListPathConfigs returns a list of all configured paths with pagination
-func (api *DirectAPI) ListPathConfigs(pagination *PaginationParams) (*DirectAPIPathConfList, error) {
+func (api *MediaMTXAPI) ListPathConfigs(pagination *PaginationParams) (*MediaMTXPathConfList, error) {
 	api.mutex.RLock()
 	conf := api.core.Conf
 	api.mutex.RUnlock()
@@ -182,7 +268,7 @@ func (api *DirectAPI) ListPathConfigs(pagination *PaginationParams) (*DirectAPIP
 	
 	// Create sorted list of paths
 	sortedNames := api.sortedPathKeys(conf.Paths)
-	data := &DirectAPIPathConfList{
+	data := &MediaMTXPathConfList{
 		Items: []map[string]interface{}{},
 	}
 	
@@ -216,7 +302,7 @@ func (api *DirectAPI) ListPathConfigs(pagination *PaginationParams) (*DirectAPIP
 }
 
 // GetPathConfig returns the configuration for a specific path
-func (api *DirectAPI) GetPathConfig(name string) (*conf.Path, error) {
+func (api *MediaMTXAPI) GetPathConfig(name string) (*conf.Path, error) {
 	api.mutex.RLock()
 	conf := api.core.Conf
 	api.mutex.RUnlock()
@@ -234,7 +320,7 @@ func (api *DirectAPI) GetPathConfig(name string) (*conf.Path, error) {
 }
 
 // AddPathConfig adds a new path configuration
-func (api *DirectAPI) AddPathConfig(name string, pathConf *conf.OptionalPath) error {
+func (api *MediaMTXAPI) AddPathConfig(name string, pathConf *conf.OptionalPath) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
 	
@@ -255,7 +341,7 @@ func (api *DirectAPI) AddPathConfig(name string, pathConf *conf.OptionalPath) er
 }
 
 // UpdatePathConfig updates an existing path configuration (partial update)
-func (api *DirectAPI) UpdatePathConfig(name string, pathConf *conf.OptionalPath) error {
+func (api *MediaMTXAPI) UpdatePathConfig(name string, pathConf *conf.OptionalPath) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
 	
@@ -276,7 +362,7 @@ func (api *DirectAPI) UpdatePathConfig(name string, pathConf *conf.OptionalPath)
 }
 
 // ReplacePathConfig replaces an entire path configuration
-func (api *DirectAPI) ReplacePathConfig(name string, pathConf *conf.OptionalPath) error {
+func (api *MediaMTXAPI) ReplacePathConfig(name string, pathConf *conf.OptionalPath) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
 	
@@ -297,7 +383,7 @@ func (api *DirectAPI) ReplacePathConfig(name string, pathConf *conf.OptionalPath
 }
 
 // DeletePathConfig removes a path configuration
-func (api *DirectAPI) DeletePathConfig(name string) error {
+func (api *MediaMTXAPI) DeletePathConfig(name string) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
 	
@@ -322,7 +408,7 @@ func (api *DirectAPI) DeletePathConfig(name string) error {
 // =============================================================================
 
 // ListActivePaths returns a list of all active paths with pagination
-func (api *DirectAPI) ListActivePaths(pagination *PaginationParams) (*defs.APIPathList, error) {
+func (api *MediaMTXAPI) ListActivePaths(pagination *PaginationParams) (*defs.APIPathList, error) {
 	data, err := api.core.PathManager.APIPathsList()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get active paths: %v", err)
@@ -342,7 +428,7 @@ func (api *DirectAPI) ListActivePaths(pagination *PaginationParams) (*defs.APIPa
 }
 
 // GetActivePath returns information about a specific active path
-func (api *DirectAPI) GetActivePath(name string) (*defs.APIPath, error) {
+func (api *MediaMTXAPI) GetActivePath(name string) (*defs.APIPath, error) {
 	data, err := api.core.PathManager.APIPathsGet(name)
 	if err != nil {
 		if errors.Is(err, conf.ErrPathNotFound) {
@@ -359,7 +445,7 @@ func (api *DirectAPI) GetActivePath(name string) (*defs.APIPath, error) {
 // =============================================================================
 
 // GetRTSPConnections returns a list of RTSP connections with pagination
-func (api *DirectAPI) GetRTSPConnections(pagination *PaginationParams) (*defs.APIRTSPConnsList, error) {
+func (api *MediaMTXAPI) GetRTSPConnections(pagination *PaginationParams) (*defs.APIRTSPConnsList, error) {
 	if api.core.RtspServer == nil {
 		return nil, fmt.Errorf("RTSP server not available")
 	}
@@ -382,7 +468,7 @@ func (api *DirectAPI) GetRTSPConnections(pagination *PaginationParams) (*defs.AP
 }
 
 // GetRTSPConnection returns information about a specific RTSP connection
-func (api *DirectAPI) GetRTSPConnection(id string) (*defs.APIRTSPConn, error) {
+func (api *MediaMTXAPI) GetRTSPConnection(id string) (*defs.APIRTSPConn, error) {
 	if api.core.RtspServer == nil {
 		return nil, fmt.Errorf("RTSP server not available")
 	}
@@ -401,7 +487,7 @@ func (api *DirectAPI) GetRTSPConnection(id string) (*defs.APIRTSPConn, error) {
 }
 
 // GetRTSPSessions returns a list of RTSP sessions with pagination
-func (api *DirectAPI) GetRTSPSessions(pagination *PaginationParams) (*defs.APIRTSPSessionList, error) {
+func (api *MediaMTXAPI) GetRTSPSessions(pagination *PaginationParams) (*defs.APIRTSPSessionList, error) {
 	if api.core.RtspServer == nil {
 		return nil, fmt.Errorf("RTSP server not available")
 	}
@@ -424,7 +510,7 @@ func (api *DirectAPI) GetRTSPSessions(pagination *PaginationParams) (*defs.APIRT
 }
 
 // GetRTSPSession returns information about a specific RTSP session
-func (api *DirectAPI) GetRTSPSession(id string) (*defs.APIRTSPSession, error) {
+func (api *MediaMTXAPI) GetRTSPSession(id string) (*defs.APIRTSPSession, error) {
 	if api.core.RtspServer == nil {
 		return nil, fmt.Errorf("RTSP server not available")
 	}
@@ -443,7 +529,7 @@ func (api *DirectAPI) GetRTSPSession(id string) (*defs.APIRTSPSession, error) {
 }
 
 // KickRTSPSession kicks (disconnects) an RTSP session
-func (api *DirectAPI) KickRTSPSession(id string) error {
+func (api *MediaMTXAPI) KickRTSPSession(id string) error {
 	if api.core.RtspServer == nil {
 		return fmt.Errorf("RTSP server not available")
 	}
@@ -466,7 +552,7 @@ func (api *DirectAPI) KickRTSPSession(id string) error {
 // =============================================================================
 
 // sortedPathKeys returns sorted keys from paths map
-func (api *DirectAPI) sortedPathKeys(paths map[string]*conf.Path) []string {
+func (api *MediaMTXAPI) sortedPathKeys(paths map[string]*conf.Path) []string {
 	keys := make([]string, 0, len(paths))
 	for name := range paths {
 		keys = append(keys, name)
@@ -476,7 +562,7 @@ func (api *DirectAPI) sortedPathKeys(paths map[string]*conf.Path) []string {
 }
 
 // paginateSlice applies pagination to a slice using reflection
-func (api *DirectAPI) paginateSlice(itemsPtr interface{}, itemsPerPage, page int) int {
+func (api *MediaMTXAPI) paginateSlice(itemsPtr interface{}, itemsPerPage, page int) int {
 	if itemsPerPage <= 0 {
 		return 1
 	}
@@ -543,7 +629,7 @@ func PaginateFromStrings(itemsPerPageStr, pageStr string) (*PaginationParams, er
 // =============================================================================
 
 // Authenticate performs authentication for API access
-func (api *DirectAPI) Authenticate(req *auth.Request) *auth.Error {
+func (api *MediaMTXAPI) Authenticate(req *auth.Request) *auth.Error {
 	if api.core.AuthManager == nil {
 		return nil
 	}
@@ -552,7 +638,7 @@ func (api *DirectAPI) Authenticate(req *auth.Request) *auth.Error {
 }
 
 // RefreshJWTJWKS refreshes JWT JWKS (JSON Web Key Set) configuration
-func (api *DirectAPI) RefreshJWTJWKS() {
+func (api *MediaMTXAPI) RefreshJWTJWKS() {
 	if api.core.AuthManager == nil {
 		return
 	}
@@ -561,7 +647,7 @@ func (api *DirectAPI) RefreshJWTJWKS() {
 }
 
 // CreateAuthRequest creates an authentication request for API access
-func (api *DirectAPI) CreateAuthRequest(user, pass, query, ip string) (*auth.Request, error) {
+func (api *MediaMTXAPI) CreateAuthRequest(user, pass, query, ip string) (*auth.Request, error) {
 	parsedIP := net.ParseIP(ip)
 	if parsedIP == nil {
 		return nil, fmt.Errorf("invalid IP address: %s", ip)
@@ -579,7 +665,7 @@ func (api *DirectAPI) CreateAuthRequest(user, pass, query, ip string) (*auth.Req
 }
 
 // ValidateAPIAccess validates if a user has access to the API
-func (api *DirectAPI) ValidateAPIAccess(user, pass, ip string) error {
+func (api *MediaMTXAPI) ValidateAPIAccess(user, pass, ip string) error {
 	req, err := api.CreateAuthRequest(user, pass, "", ip)
 	if err != nil {
 		return fmt.Errorf("failed to create auth request: %v", err)

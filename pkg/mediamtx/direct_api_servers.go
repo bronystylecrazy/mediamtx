@@ -13,7 +13,7 @@ import (
 // =============================================================================
 
 // GetRTMPConnections returns a list of RTMP connections with pagination
-func (api *DirectAPI) GetRTMPConnections(pagination *PaginationParams) (*defs.APIRTMPConnList, error) {
+func (api *MediaMTXAPI) GetRTMPConnections(pagination *PaginationParams) (*defs.APIRTMPConnList, error) {
 	if api.core.RtmpServer == nil {
 		return nil, fmt.Errorf("RTMP server not available")
 	}
@@ -36,7 +36,7 @@ func (api *DirectAPI) GetRTMPConnections(pagination *PaginationParams) (*defs.AP
 }
 
 // GetRTMPConnection returns information about a specific RTMP connection
-func (api *DirectAPI) GetRTMPConnection(id string) (*defs.APIRTMPConn, error) {
+func (api *MediaMTXAPI) GetRTMPConnection(id string) (*defs.APIRTMPConn, error) {
 	if api.core.RtmpServer == nil {
 		return nil, fmt.Errorf("RTMP server not available")
 	}
@@ -55,7 +55,7 @@ func (api *DirectAPI) GetRTMPConnection(id string) (*defs.APIRTMPConn, error) {
 }
 
 // KickRTMPConnection kicks (disconnects) an RTMP connection
-func (api *DirectAPI) KickRTMPConnection(id string) error {
+func (api *MediaMTXAPI) KickRTMPConnection(id string) error {
 	if api.core.RtmpServer == nil {
 		return fmt.Errorf("RTMP server not available")
 	}
@@ -74,7 +74,7 @@ func (api *DirectAPI) KickRTMPConnection(id string) error {
 }
 
 // GetRTMPSConnections returns a list of RTMPS connections with pagination
-func (api *DirectAPI) GetRTMPSConnections(pagination *PaginationParams) (*defs.APIRTMPConnList, error) {
+func (api *MediaMTXAPI) GetRTMPSConnections(pagination *PaginationParams) (*defs.APIRTMPConnList, error) {
 	if api.core.RtmpsServer == nil {
 		return nil, fmt.Errorf("RTMPS server not available")
 	}
@@ -97,7 +97,7 @@ func (api *DirectAPI) GetRTMPSConnections(pagination *PaginationParams) (*defs.A
 }
 
 // GetRTMPSConnection returns information about a specific RTMPS connection
-func (api *DirectAPI) GetRTMPSConnection(id string) (*defs.APIRTMPConn, error) {
+func (api *MediaMTXAPI) GetRTMPSConnection(id string) (*defs.APIRTMPConn, error) {
 	if api.core.RtmpsServer == nil {
 		return nil, fmt.Errorf("RTMPS server not available")
 	}
@@ -116,7 +116,7 @@ func (api *DirectAPI) GetRTMPSConnection(id string) (*defs.APIRTMPConn, error) {
 }
 
 // KickRTMPSConnection kicks (disconnects) an RTMPS connection
-func (api *DirectAPI) KickRTMPSConnection(id string) error {
+func (api *MediaMTXAPI) KickRTMPSConnection(id string) error {
 	if api.core.RtmpsServer == nil {
 		return fmt.Errorf("RTMPS server not available")
 	}
@@ -139,7 +139,7 @@ func (api *DirectAPI) KickRTMPSConnection(id string) error {
 // =============================================================================
 
 // GetHLSMuxers returns a list of HLS muxers with pagination
-func (api *DirectAPI) GetHLSMuxers(pagination *PaginationParams) (*defs.APIHLSMuxerList, error) {
+func (api *MediaMTXAPI) GetHLSMuxers(pagination *PaginationParams) (*defs.APIHLSMuxerList, error) {
 	if api.core.HlsServer == nil {
 		return nil, fmt.Errorf("HLS server not available")
 	}
@@ -162,7 +162,7 @@ func (api *DirectAPI) GetHLSMuxers(pagination *PaginationParams) (*defs.APIHLSMu
 }
 
 // GetHLSMuxer returns information about a specific HLS muxer
-func (api *DirectAPI) GetHLSMuxer(name string) (*defs.APIHLSMuxer, error) {
+func (api *MediaMTXAPI) GetHLSMuxer(name string) (*defs.APIHLSMuxer, error) {
 	if api.core.HlsServer == nil {
 		return nil, fmt.Errorf("HLS server not available")
 	}
@@ -180,7 +180,7 @@ func (api *DirectAPI) GetHLSMuxer(name string) (*defs.APIHLSMuxer, error) {
 // =============================================================================
 
 // GetWebRTCSessions returns a list of WebRTC sessions with pagination
-func (api *DirectAPI) GetWebRTCSessions(pagination *PaginationParams) (*defs.APIWebRTCSessionList, error) {
+func (api *MediaMTXAPI) GetWebRTCSessions(pagination *PaginationParams) (*defs.APIWebRTCSessionList, error) {
 	if api.core.WebRTCServer == nil {
 		return nil, fmt.Errorf("WebRTC server not available")
 	}
@@ -203,7 +203,7 @@ func (api *DirectAPI) GetWebRTCSessions(pagination *PaginationParams) (*defs.API
 }
 
 // GetWebRTCSession returns information about a specific WebRTC session
-func (api *DirectAPI) GetWebRTCSession(id string) (*defs.APIWebRTCSession, error) {
+func (api *MediaMTXAPI) GetWebRTCSession(id string) (*defs.APIWebRTCSession, error) {
 	if api.core.WebRTCServer == nil {
 		return nil, fmt.Errorf("WebRTC server not available")
 	}
@@ -222,7 +222,7 @@ func (api *DirectAPI) GetWebRTCSession(id string) (*defs.APIWebRTCSession, error
 }
 
 // KickWebRTCSession kicks (disconnects) a WebRTC session
-func (api *DirectAPI) KickWebRTCSession(id string) error {
+func (api *MediaMTXAPI) KickWebRTCSession(id string) error {
 	if api.core.WebRTCServer == nil {
 		return fmt.Errorf("WebRTC server not available")
 	}
@@ -245,7 +245,7 @@ func (api *DirectAPI) KickWebRTCSession(id string) error {
 // =============================================================================
 
 // GetSRTConnections returns a list of SRT connections with pagination
-func (api *DirectAPI) GetSRTConnections(pagination *PaginationParams) (*defs.APISRTConnList, error) {
+func (api *MediaMTXAPI) GetSRTConnections(pagination *PaginationParams) (*defs.APISRTConnList, error) {
 	if api.core.SrtServer == nil {
 		return nil, fmt.Errorf("SRT server not available")
 	}
@@ -268,7 +268,7 @@ func (api *DirectAPI) GetSRTConnections(pagination *PaginationParams) (*defs.API
 }
 
 // GetSRTConnection returns information about a specific SRT connection
-func (api *DirectAPI) GetSRTConnection(id string) (*defs.APISRTConn, error) {
+func (api *MediaMTXAPI) GetSRTConnection(id string) (*defs.APISRTConn, error) {
 	if api.core.SrtServer == nil {
 		return nil, fmt.Errorf("SRT server not available")
 	}
@@ -287,7 +287,7 @@ func (api *DirectAPI) GetSRTConnection(id string) (*defs.APISRTConn, error) {
 }
 
 // KickSRTConnection kicks (disconnects) an SRT connection
-func (api *DirectAPI) KickSRTConnection(id string) error {
+func (api *MediaMTXAPI) KickSRTConnection(id string) error {
 	if api.core.SrtServer == nil {
 		return fmt.Errorf("SRT server not available")
 	}
@@ -310,7 +310,7 @@ func (api *DirectAPI) KickSRTConnection(id string) error {
 // =============================================================================
 
 // GetRTSPSConnections returns a list of RTSPS connections with pagination
-func (api *DirectAPI) GetRTSPSConnections(pagination *PaginationParams) (*defs.APIRTSPConnsList, error) {
+func (api *MediaMTXAPI) GetRTSPSConnections(pagination *PaginationParams) (*defs.APIRTSPConnsList, error) {
 	if api.core.RtspsServer == nil {
 		return nil, fmt.Errorf("RTSPS server not available")
 	}
@@ -333,7 +333,7 @@ func (api *DirectAPI) GetRTSPSConnections(pagination *PaginationParams) (*defs.A
 }
 
 // GetRTSPSConnection returns information about a specific RTSPS connection
-func (api *DirectAPI) GetRTSPSConnection(id string) (*defs.APIRTSPConn, error) {
+func (api *MediaMTXAPI) GetRTSPSConnection(id string) (*defs.APIRTSPConn, error) {
 	if api.core.RtspsServer == nil {
 		return nil, fmt.Errorf("RTSPS server not available")
 	}
@@ -352,7 +352,7 @@ func (api *DirectAPI) GetRTSPSConnection(id string) (*defs.APIRTSPConn, error) {
 }
 
 // GetRTSPSSessions returns a list of RTSPS sessions with pagination
-func (api *DirectAPI) GetRTSPSSessions(pagination *PaginationParams) (*defs.APIRTSPSessionList, error) {
+func (api *MediaMTXAPI) GetRTSPSSessions(pagination *PaginationParams) (*defs.APIRTSPSessionList, error) {
 	if api.core.RtspsServer == nil {
 		return nil, fmt.Errorf("RTSPS server not available")
 	}
@@ -375,7 +375,7 @@ func (api *DirectAPI) GetRTSPSSessions(pagination *PaginationParams) (*defs.APIR
 }
 
 // GetRTSPSSession returns information about a specific RTSPS session
-func (api *DirectAPI) GetRTSPSSession(id string) (*defs.APIRTSPSession, error) {
+func (api *MediaMTXAPI) GetRTSPSSession(id string) (*defs.APIRTSPSession, error) {
 	if api.core.RtspsServer == nil {
 		return nil, fmt.Errorf("RTSPS server not available")
 	}
@@ -394,7 +394,7 @@ func (api *DirectAPI) GetRTSPSSession(id string) (*defs.APIRTSPSession, error) {
 }
 
 // KickRTSPSSession kicks (disconnects) an RTSPS session
-func (api *DirectAPI) KickRTSPSSession(id string) error {
+func (api *MediaMTXAPI) KickRTSPSSession(id string) error {
 	if api.core.RtspsServer == nil {
 		return fmt.Errorf("RTSPS server not available")
 	}

@@ -23,7 +23,7 @@ type RecordingQuery struct {
 // =============================================================================
 
 // GetRecordings returns a list of recordings with optional filtering and pagination
-func (api *DirectAPI) GetRecordings(query *RecordingQuery, pagination *PaginationParams) (*defs.APIRecordingList, error) {
+func (api *MediaMTXAPI) GetRecordings(query *RecordingQuery, pagination *PaginationParams) (*defs.APIRecordingList, error) {
 	conf, err := api.GetGlobalConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get configuration: %v", err)
@@ -99,7 +99,7 @@ func (api *DirectAPI) GetRecordings(query *RecordingQuery, pagination *Paginatio
 }
 
 // GetRecording returns information about a specific recording
-func (api *DirectAPI) GetRecording(pathName string) (*defs.APIRecording, error) {
+func (api *MediaMTXAPI) GetRecording(pathName string) (*defs.APIRecording, error) {
 	conf, err := api.GetGlobalConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get configuration: %v", err)
@@ -119,7 +119,7 @@ func (api *DirectAPI) GetRecording(pathName string) (*defs.APIRecording, error) 
 }
 
 // DeleteRecordingSegment deletes a specific segment from a recording
-func (api *DirectAPI) DeleteRecordingSegment(pathName string, segmentStart time.Time) error {
+func (api *MediaMTXAPI) DeleteRecordingSegment(pathName string, segmentStart time.Time) error {
 	globalConf, err := api.GetGlobalConfig()
 	if err != nil {
 		return fmt.Errorf("failed to get configuration: %v", err)
@@ -148,13 +148,13 @@ func (api *DirectAPI) DeleteRecordingSegment(pathName string, segmentStart time.
 }
 
 // GetRecordingsByPath returns recordings for a specific path
-func (api *DirectAPI) GetRecordingsByPath(pathName string, pagination *PaginationParams) (*defs.APIRecordingList, error) {
+func (api *MediaMTXAPI) GetRecordingsByPath(pathName string, pagination *PaginationParams) (*defs.APIRecordingList, error) {
 	query := &RecordingQuery{Path: pathName}
 	return api.GetRecordings(query, pagination)
 }
 
 // GetRecordingsByTimeRange returns recordings within a specific time range
-func (api *DirectAPI) GetRecordingsByTimeRange(startTime, endTime time.Time, pagination *PaginationParams) (*defs.APIRecordingList, error) {
+func (api *MediaMTXAPI) GetRecordingsByTimeRange(startTime, endTime time.Time, pagination *PaginationParams) (*defs.APIRecordingList, error) {
 	query := &RecordingQuery{
 		StartTime: &startTime,
 		EndTime:   &endTime,
@@ -167,7 +167,7 @@ func (api *DirectAPI) GetRecordingsByTimeRange(startTime, endTime time.Time, pag
 // =============================================================================
 
 // GetRecordingInfo provides detailed information about recordings for a path
-func (api *DirectAPI) GetRecordingInfo(pathName string) (*RecordingInfo, error) {
+func (api *MediaMTXAPI) GetRecordingInfo(pathName string) (*RecordingInfo, error) {
 	recording, err := api.GetRecording(pathName)
 	if err != nil {
 		return nil, err
@@ -220,7 +220,7 @@ type RecordingInfo struct {
 // =============================================================================
 
 // StartRecording starts recording for a specific path
-func (api *DirectAPI) StartRecording(pathName string) error {
+func (api *MediaMTXAPI) StartRecording(pathName string) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
 
@@ -248,7 +248,7 @@ func (api *DirectAPI) StartRecording(pathName string) error {
 }
 
 // StopRecording stops recording for a specific path
-func (api *DirectAPI) StopRecording(pathName string) error {
+func (api *MediaMTXAPI) StopRecording(pathName string) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
 
@@ -276,7 +276,7 @@ func (api *DirectAPI) StopRecording(pathName string) error {
 }
 
 // IsRecording checks if a path is currently recording
-func (api *DirectAPI) IsRecording(pathName string) (bool, error) {
+func (api *MediaMTXAPI) IsRecording(pathName string) (bool, error) {
 	pathConfig, err := api.GetPathConfig(pathName)
 	if err != nil {
 		return false, err
@@ -286,7 +286,7 @@ func (api *DirectAPI) IsRecording(pathName string) (bool, error) {
 }
 
 // SetRecordingPath updates the recording path for a specific path
-func (api *DirectAPI) SetRecordingPath(pathName, recordingPath string) error {
+func (api *MediaMTXAPI) SetRecordingPath(pathName, recordingPath string) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
 
@@ -314,7 +314,7 @@ func (api *DirectAPI) SetRecordingPath(pathName, recordingPath string) error {
 }
 
 // GetRecordingPath returns the recording path for a specific path
-func (api *DirectAPI) GetRecordingPath(pathName string) (string, error) {
+func (api *MediaMTXAPI) GetRecordingPath(pathName string) (string, error) {
 	pathConfig, err := api.GetPathConfig(pathName)
 	if err != nil {
 		return "", err
@@ -328,7 +328,7 @@ func (api *DirectAPI) GetRecordingPath(pathName string) (string, error) {
 // =============================================================================
 
 // recordingsOfPath creates an APIRecording for a given path, based on the original internal/api implementation
-func (api *DirectAPI) recordingsOfPath(pathConf *conf.Path, pathName string) *defs.APIRecording {
+func (api *MediaMTXAPI) recordingsOfPath(pathConf *conf.Path, pathName string) *defs.APIRecording {
 	ret := &defs.APIRecording{
 		Name: pathName,
 	}

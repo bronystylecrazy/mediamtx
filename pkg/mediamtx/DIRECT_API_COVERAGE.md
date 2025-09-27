@@ -1,7 +1,7 @@
-# MediaMTX Direct API - Complete Coverage Report
+# MediaMTX API - Complete Coverage Report
 
 ## Overview
-The Direct API provides 100% coverage of all endpoints from `internal/api`, enabling direct function calls without gin/HTTP dependencies.
+The MediaMTX API provides 100% coverage of all endpoints from `internal/api`, enabling direct function calls without gin/HTTP dependencies.
 
 ## ✅ Complete Endpoint Coverage (34/34)
 
@@ -95,7 +95,7 @@ The Direct API provides 100% coverage of all endpoints from `internal/api`, enab
 ## 📁 File Structure
 
 ### Core Implementation
-- `direct_api.go` - Main API with configuration and path management
+- `direct_api.go` - Main MediaMTX API with configuration and path management
 - `direct_api_servers.go` - All server protocol management
 - `direct_api_recordings.go` - Recording operations and management
 
@@ -106,9 +106,9 @@ The Direct API provides 100% coverage of all endpoints from `internal/api`, enab
 ## 🚀 Usage Example
 
 ```go
-// Initialize direct API
+// Initialize MediaMTX API
 core := &Core{}
-api := NewDirectAPI(core)
+api := NewMediaMTXAPI(core)
 
 // Configuration management
 config, err := api.GetGlobalConfig()
@@ -156,7 +156,7 @@ authErr := api.Authenticate(authReq)
 
 ## ✨ Summary
 
-**Complete Success!** The Direct API provides 100% coverage of all 34 endpoints from the original `internal/api`, with:
+**Complete Success!** The MediaMTX API provides 100% coverage of all 34 endpoints from the original `internal/api`, with:
 
 - ✅ All HTTP endpoints converted to direct function calls
 - ✅ Type compatibility issues resolved
@@ -165,4 +165,4 @@ authErr := api.Authenticate(authReq)
 - ✅ Full documentation and examples
 - ✅ Production-ready code
 
-The MediaMTX Direct API is now ready for use in any scenario requiring programmatic access to MediaMTX functionality without HTTP dependencies.
+The MediaMTX API is now ready for use in any scenario requiring programmatic access to MediaMTX functionality without HTTP dependencies.

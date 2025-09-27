@@ -5,15 +5,15 @@ import (
 	"time"
 )
 
-// ExampleDirectAPIUsage demonstrates how to use the DirectAPI without gin/HTTP dependencies
-func ExampleDirectAPIUsage() {
+// ExampleMediaMTXAPIUsage demonstrates how to use the DirectAPI without gin/HTTP dependencies
+func ExampleMediaMTXAPIUsage() {
 	// Create a MediaMTX core instance
 	core := &Core{}
 	
 	// Initialize the direct API
-	api := NewDirectAPI(core)
+	api := NewMediaMTXAPI(core)
 	
-	fmt.Println("=== MediaMTX Direct API Example ===")
+	fmt.Println("=== MediaMTX MediaMTX API Example ===")
 	
 	// 1. Configuration Management
 	fmt.Println("\n1. Configuration Management:")
@@ -55,7 +55,7 @@ func ExampleDirectAPIUsage() {
 	
 	// 5. Server Management (would work with running servers)
 	fmt.Println("\n5. Server Management:")
-	fmt.Println("   Direct API provides methods for:")
+	fmt.Println("   MediaMTX API provides methods for:")
 	fmt.Println("   - RTSP/RTSPS connections and sessions")
 	fmt.Println("   - RTMP/RTMPS connections") 
 	fmt.Println("   - WebRTC sessions")
@@ -64,7 +64,7 @@ func ExampleDirectAPIUsage() {
 	
 	// 6. Recording Management
 	fmt.Println("\n6. Recording Management:")
-	fmt.Println("   Direct API provides methods for:")
+	fmt.Println("   MediaMTX API provides methods for:")
 	fmt.Println("   - Querying recordings with time filters")
 	fmt.Println("   - Getting recording information")
 	fmt.Println("   - Deleting recording segments")
@@ -90,7 +90,7 @@ func ExampleDirectAPIUsage() {
 	fmt.Println("   ✅ Pagination support")
 	fmt.Println("   ✅ Thread-safe operations")
 	
-	fmt.Println("\n=== 🎉 Complete Direct API Implementation! 🎉 ===")
+	fmt.Println("\n=== 🎉 Complete MediaMTX API Implementation! 🎉 ===")
 	fmt.Println("Coverage: 100% of original internal/api endpoints")
 	fmt.Println("Ready for production use without gin/HTTP dependencies!")
 }

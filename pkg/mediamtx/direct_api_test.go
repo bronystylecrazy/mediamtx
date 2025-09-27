@@ -9,7 +9,7 @@ import (
 )
 
 func TestDirectAPI_ConfigurationManagement(t *testing.T) {
-	api := NewDirectAPI(&Core{})
+	api := NewMediaMTXAPI(&Core{})
 	
 	// Test GetPathDefaults
 	defaults := api.GetPathDefaults()
@@ -24,7 +24,7 @@ func TestDirectAPI_ConfigurationManagement(t *testing.T) {
 
 func TestDirectAPI_PathManagement(t *testing.T) {
 	// Simple test without complex type dependencies
-	api := NewDirectAPI(&Core{})
+	api := NewMediaMTXAPI(&Core{})
 	require.NotNil(t, api)
 	
 	// Test basic functionality
@@ -78,7 +78,7 @@ func TestDirectAPI_PaginationParams(t *testing.T) {
 func TestDirectAPI_AuthenticationMethods(t *testing.T) {
 	// Test with nil AuthManager
 	core := &Core{}
-	api := NewDirectAPI(core)
+	api := NewMediaMTXAPI(core)
 	
 	// Should not panic with nil AuthManager
 	require.NotPanics(t, func() {
@@ -133,7 +133,7 @@ func TestDirectAPI_paginateSlice(t *testing.T) {
 	core := &Core{
 		Conf: &conf.Conf{},
 	}
-	api := NewDirectAPI(core)
+	api := NewMediaMTXAPI(core)
 	
 	// Test pagination with empty slice
 	items := []string{}
@@ -176,7 +176,7 @@ func TestDirectAPI_paginateSlice(t *testing.T) {
 
 func TestDirectAPI_sortedPathKeys(t *testing.T) {
 	core := &Core{}
-	api := NewDirectAPI(core)
+	api := NewMediaMTXAPI(core)
 	
 	paths := map[string]*conf.Path{
 		"zebra": &conf.Path{Name: "zebra"},
@@ -195,7 +195,7 @@ func TestDirectAPI_sortedPathKeys(t *testing.T) {
 
 func TestDirectAPI_PatchMethods(t *testing.T) {
 	// Test that patch methods exist and have proper signatures
-	api := NewDirectAPI(&Core{})
+	api := NewMediaMTXAPI(&Core{})
 	
 	// Test that methods exist by checking they're not nil
 	require.NotNil(t, api.PatchGlobalConfig)
@@ -206,7 +206,7 @@ func TestDirectAPI_PatchMethods(t *testing.T) {
 }
 
 func TestDirectAPI_ListPathConfigs(t *testing.T) {
-	api := NewDirectAPI(&Core{})
+	api := NewMediaMTXAPI(&Core{})
 	
 	// Test with nil configuration
 	result, err := api.ListPathConfigs(nil)

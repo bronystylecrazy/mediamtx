@@ -1,6 +1,7 @@
 package mediamtx
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -597,6 +598,169 @@ func (api *MediaMTXAPI) paginateSlice(itemsPtr interface{}, itemsPerPage, page i
 // =============================================================================
 // CONVENIENCE METHODS
 // =============================================================================
+
+// PathOptions represents comprehensive path configuration options based on OpenAPI PathConf schema
+type PathOptions struct {
+	Name string `json:"name,omitempty"`
+
+	// General
+	Source                     string `json:"source,omitempty"`
+	SourceFingerprint          string `json:"sourceFingerprint,omitempty"`
+	SourceOnDemand             bool   `json:"sourceOnDemand,omitempty"`
+	SourceOnDemandStartTimeout string `json:"sourceOnDemandStartTimeout,omitempty"`
+	SourceOnDemandCloseAfter   string `json:"sourceOnDemandCloseAfter,omitempty"`
+	MaxReaders                 int    `json:"maxReaders,omitempty"`
+	SRTReadPassphrase          string `json:"srtReadPassphrase,omitempty"`
+	Fallback                   string `json:"fallback,omitempty"`
+	UseAbsoluteTimestamp       bool   `json:"useAbsoluteTimestamp,omitempty"`
+
+	// Record
+	Record                bool   `json:"record,omitempty"`
+	RecordPath            string `json:"recordPath,omitempty"`
+	RecordFormat          string `json:"recordFormat,omitempty"`
+	RecordPartDuration    string `json:"recordPartDuration,omitempty"`
+	RecordMaxPartSize     string `json:"recordMaxPartSize,omitempty"`
+	RecordSegmentDuration string `json:"recordSegmentDuration,omitempty"`
+	RecordDeleteAfter     string `json:"recordDeleteAfter,omitempty"`
+
+	// Publisher source
+	OverridePublisher    bool   `json:"overridePublisher,omitempty"`
+	SRTPublishPassphrase string `json:"srtPublishPassphrase,omitempty"`
+
+	// RTSP source
+	RTSPTransport           string `json:"rtspTransport,omitempty"`
+	RTSPAnyPort             bool   `json:"rtspAnyPort,omitempty"`
+	RTSPRangeType           string `json:"rtspRangeType,omitempty"`
+	RTSPRangeStart          string `json:"rtspRangeStart,omitempty"`
+	RTSPUDPReadBufferSize   int    `json:"rtspUDPReadBufferSize,omitempty"`
+
+	// MPEG-TS source
+	MPEGTSUDPReadBufferSize int `json:"mpegtsUDPReadBufferSize,omitempty"`
+
+	// RTP source
+	RTPSDP                string `json:"rtpSDP,omitempty"`
+	RTPUDPReadBufferSize  int    `json:"rtpUDPReadBufferSize,omitempty"`
+
+	// Redirect source
+	SourceRedirect string `json:"sourceRedirect,omitempty"`
+
+	// Raspberry Pi Camera source
+	RPICameraCamID                 int       `json:"rpiCameraCamID,omitempty"`
+	RPICameraSecondary             bool      `json:"rpiCameraSecondary,omitempty"`
+	RPICameraWidth                 int       `json:"rpiCameraWidth,omitempty"`
+	RPICameraHeight                int       `json:"rpiCameraHeight,omitempty"`
+	RPICameraHFlip                 bool      `json:"rpiCameraHFlip,omitempty"`
+	RPICameraVFlip                 bool      `json:"rpiCameraVFlip,omitempty"`
+	RPICameraBrightness            float64   `json:"rpiCameraBrightness,omitempty"`
+	RPICameraContrast              float64   `json:"rpiCameraContrast,omitempty"`
+	RPICameraSaturation            float64   `json:"rpiCameraSaturation,omitempty"`
+	RPICameraSharpness             float64   `json:"rpiCameraSharpness,omitempty"`
+	RPICameraExposure              string    `json:"rpiCameraExposure,omitempty"`
+	RPICameraAWB                   string    `json:"rpiCameraAWB,omitempty"`
+	RPICameraAWBGains              []float64 `json:"rpiCameraAWBGains,omitempty"`
+	RPICameraDenoise               string    `json:"rpiCameraDenoise,omitempty"`
+	RPICameraShutter               int       `json:"rpiCameraShutter,omitempty"`
+	RPICameraMetering              string    `json:"rpiCameraMetering,omitempty"`
+	RPICameraGain                  float64   `json:"rpiCameraGain,omitempty"`
+	RPICameraEV                    float64   `json:"rpiCameraEV,omitempty"`
+	RPICameraROI                   string    `json:"rpiCameraROI,omitempty"`
+	RPICameraHDR                   bool      `json:"rpiCameraHDR,omitempty"`
+	RPICameraTuningFile            string    `json:"rpiCameraTuningFile,omitempty"`
+	RPICameraMode                  string    `json:"rpiCameraMode,omitempty"`
+	RPICameraFPS                   float64   `json:"rpiCameraFPS,omitempty"`
+	RPICameraAfMode                string    `json:"rpiCameraAfMode,omitempty"`
+	RPICameraAfRange               string    `json:"rpiCameraAfRange,omitempty"`
+	RPICameraAfSpeed               string    `json:"rpiCameraAfSpeed,omitempty"`
+	RPICameraLensPosition          float64   `json:"rpiCameraLensPosition,omitempty"`
+	RPICameraAfWindow              string    `json:"rpiCameraAfWindow,omitempty"`
+	RPICameraFlickerPeriod         int       `json:"rpiCameraFlickerPeriod,omitempty"`
+	RPICameraTextOverlayEnable     bool      `json:"rpiCameraTextOverlayEnable,omitempty"`
+	RPICameraTextOverlay           string    `json:"rpiCameraTextOverlay,omitempty"`
+	RPICameraCodec                 string    `json:"rpiCameraCodec,omitempty"`
+	RPICameraIDRPeriod             int       `json:"rpiCameraIDRPeriod,omitempty"`
+	RPICameraBitrate               int       `json:"rpiCameraBitrate,omitempty"`
+	RPICameraHardwareH264Profile   string    `json:"rpiCameraHardwareH264Profile,omitempty"`
+	RPICameraHardwareH264Level     string    `json:"rpiCameraHardwareH264Level,omitempty"`
+	RPICameraSoftwareH264Profile   string    `json:"rpiCameraSoftwareH264Profile,omitempty"`
+	RPICameraSoftwareH264Level     string    `json:"rpiCameraSoftwareH264Level,omitempty"`
+	RPICameraMJPEGQuality          int       `json:"rpiCameraMJPEGQuality,omitempty"`
+
+	// Hooks
+	RunOnInit                    string `json:"runOnInit,omitempty"`
+	RunOnInitRestart             bool   `json:"runOnInitRestart,omitempty"`
+	RunOnDemand                  string `json:"runOnDemand,omitempty"`
+	RunOnDemandRestart           bool   `json:"runOnDemandRestart,omitempty"`
+	RunOnDemandStartTimeout      string `json:"runOnDemandStartTimeout,omitempty"`
+	RunOnDemandCloseAfter        string `json:"runOnDemandCloseAfter,omitempty"`
+	RunOnUnDemand                string `json:"runOnUnDemand,omitempty"`
+	RunOnReady                   string `json:"runOnReady,omitempty"`
+	RunOnReadyRestart            bool   `json:"runOnReadyRestart,omitempty"`
+	RunOnNotReady                string `json:"runOnNotReady,omitempty"`
+	RunOnRead                    string `json:"runOnRead,omitempty"`
+	RunOnReadRestart             bool   `json:"runOnReadRestart,omitempty"`
+	RunOnUnread                  string `json:"runOnUnread,omitempty"`
+	RunOnRecordSegmentCreate     string `json:"runOnRecordSegmentCreate,omitempty"`
+	RunOnRecordSegmentComplete   string `json:"runOnRecordSegmentComplete,omitempty"`
+}
+
+// NewOptionalPath creates a new OptionalPath with the given source
+func NewOptionalPath(source string) *conf.OptionalPath {
+	return NewOptionalPathWithOptions(PathOptions{Source: source})
+}
+
+// NewOptionalPathWithOptions creates a new OptionalPath with typed options
+func NewOptionalPathWithOptions(options PathOptions) *conf.OptionalPath {
+	optPath := &conf.OptionalPath{}
+	
+	// Use JSON marshaling/unmarshaling to convert from PathOptions to conf.Path
+	// This automatically handles the field mapping using JSON tags
+	optionsJSON, err := json.Marshal(options)
+	if err != nil {
+		// Fallback to basic path if marshaling fails
+		optPath.Values = &conf.Path{Source: options.Source}
+		return optPath
+	}
+	
+	// Create a map to hold the JSON data
+	var pathData map[string]interface{}
+	if err := json.Unmarshal(optionsJSON, &pathData); err != nil {
+		// Fallback to basic path if unmarshaling fails
+		optPath.Values = &conf.Path{Source: options.Source}
+		return optPath
+	}
+	
+	// Remove any empty/zero values to match the optional behavior
+	cleanedData := make(map[string]interface{})
+	for key, value := range pathData {
+		// Skip empty strings, zero numbers, false booleans, and empty slices
+		switch v := value.(type) {
+		case string:
+			if v != "" {
+				cleanedData[key] = v
+			}
+		case float64:
+			if v != 0 {
+				cleanedData[key] = v
+			}
+		case bool:
+			if v {
+				cleanedData[key] = v
+			}
+		case []interface{}:
+			if len(v) > 0 {
+				cleanedData[key] = v
+			}
+		default:
+			if value != nil {
+				cleanedData[key] = value
+			}
+		}
+	}
+	
+	// Set the Values field to the cleaned data map
+	optPath.Values = cleanedData
+	return optPath
+}
 
 // PaginateFromStrings converts string pagination parameters
 func PaginateFromStrings(itemsPerPageStr, pageStr string) (*PaginationParams, error) {

@@ -205,6 +205,56 @@ func TestDirectAPI_PatchMethods(t *testing.T) {
 	// as it would require a valid configuration structure
 }
 
+func TestDirectAPI_OptionalPathHelpers(t *testing.T) {
+	// Test NewOptionalPath helper function
+	optPath := NewOptionalPath("rtsp://localhost:8554/test")
+	require.NotNil(t, optPath)
+	require.NotNil(t, optPath.Values)
+	
+	// Verify the source was set
+	if path, ok := optPath.Values.(*conf.Path); ok {
+		require.Equal(t, "rtsp://localhost:8554/test", path.Source)
+		require.False(t, path.Record) // Default should be false
+	}
+	
+	// Test NewOptionalPathWithOptions using comprehensive typed struct
+	options := PathOptions{
+		Source:                     "rtsp://example.com/stream",
+		Record:                     true,
+		RecordPath:                 "/recordings",
+		RecordFormat:               "mp4",
+		MaxReaders:                 10,
+		SourceOnDemand:             true,
+		SourceOnDemandStartTimeout: "10s",
+		SourceFingerprint:          "abc123",
+		RTSPTransport:              "udp",
+		RTSPAnyPort:                true,
+		RunOnInit:                  "/scripts/init.sh",
+		RunOnInitRestart:           true,
+		UseAbsoluteTimestamp:       true,
+	}
+	optPathWithOpts := NewOptionalPathWithOptions(options)
+	require.NotNil(t, optPathWithOpts)
+	require.NotNil(t, optPathWithOpts.Values)
+	
+	// The Values field should now be a map[string]interface{} with the converted JSON data
+	if pathData, ok := optPathWithOpts.Values.(map[string]interface{}); ok {
+		require.Equal(t, "rtsp://example.com/stream", pathData["source"])
+		require.Equal(t, true, pathData["record"])
+		require.Equal(t, "/recordings", pathData["recordPath"])
+		require.Equal(t, "mp4", pathData["recordFormat"])
+		require.Equal(t, float64(10), pathData["maxReaders"]) // JSON numbers become float64
+		require.Equal(t, true, pathData["sourceOnDemand"])
+		require.Equal(t, "10s", pathData["sourceOnDemandStartTimeout"])
+		require.Equal(t, "abc123", pathData["sourceFingerprint"])
+		require.Equal(t, "udp", pathData["rtspTransport"])
+		require.Equal(t, true, pathData["rtspAnyPort"])
+		require.Equal(t, "/scripts/init.sh", pathData["runOnInit"])
+		require.Equal(t, true, pathData["runOnInitRestart"])
+		require.Equal(t, true, pathData["useAbsoluteTimestamp"])
+	}
+}
+
 func TestDirectAPI_ListPathConfigs(t *testing.T) {
 	api := NewMediaMTXAPI(&Core{})
 	

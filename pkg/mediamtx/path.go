@@ -21,6 +21,8 @@ import (
 	"github.com/bluenviron/mediamtx/pkg/utils"
 )
 
+type OptionalPath = conf.OptionalPath
+
 func emptyTimer() *time.Timer {
 	t := time.NewTimer(0)
 	<-t.C

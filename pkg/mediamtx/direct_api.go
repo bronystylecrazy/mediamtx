@@ -730,19 +730,23 @@ func NewOptionalPathWithOptions(options PathOptions) *conf.OptionalPath {
 	}
 	
 	// Remove any empty/zero values to match the optional behavior
+	// Note: Some zero values might be meaningful (e.g., RPICameraCamID: 0 is valid camera ID)
+	// So we need to be selective about which zero values to filter
 	cleanedData := make(map[string]interface{})
 	for key, value := range pathData {
-		// Skip empty strings, zero numbers, false booleans, and empty slices
+		// Skip empty strings, false booleans, and empty slices
+		// But keep zero numbers as they might be meaningful
 		switch v := value.(type) {
 		case string:
 			if v != "" {
 				cleanedData[key] = v
 			}
 		case float64:
-			if v != 0 {
-				cleanedData[key] = v
-			}
+			// Keep all numbers including zero - zero can be a valid value
+			// (e.g., RPICameraCamID: 0 is camera 0)
+			cleanedData[key] = v
 		case bool:
+			// Only include true booleans to match omitempty behavior
 			if v {
 				cleanedData[key] = v
 			}

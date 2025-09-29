@@ -7,8 +7,8 @@ import (
 // Reader is an entity that can read from a stream.
 type Reader = stream.Reader
 
-// ReadFunc is the callback passed to AddReader().
-type ReadFunc = stream.ReadFunc
+// OnDataFunc is the callback passed to OnData().
+type OnDataFunc = stream.OnDataFunc
 
 // Stream is a media stream.
 type Stream = stream.Stream

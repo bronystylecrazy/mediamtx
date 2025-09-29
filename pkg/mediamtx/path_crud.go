@@ -13,8 +13,7 @@ import (
 
 // PathCRUDManager interface is defined in interfaces.go to avoid duplication
 
-
-// PathCRUDError represents errors that can occur during path CRUD operations
+// PathCRUDError represents errors that can occur during PathHandler CRUD operations
 type PathCRUDError struct {
 	Type    string `json:"type"`
 	Message string `json:"message"`
@@ -27,10 +26,10 @@ func (e PathCRUDError) Error() string {
 
 // Common error types
 var (
-	ErrPathNotFound     = &PathCRUDError{Type: "path_not_found", Message: "path configuration not found", Code: 404}
-	ErrPathExists       = &PathCRUDError{Type: "path_exists", Message: "path configuration already exists", Code: 409}
-	ErrInvalidPathName  = &PathCRUDError{Type: "invalid_path_name", Message: "invalid path name", Code: 400}
-	ErrValidationFailed = &PathCRUDError{Type: "validation_failed", Message: "path configuration validation failed", Code: 400}
+	ErrPathNotFound     = &PathCRUDError{Type: "path_not_found", Message: "PathHandler configuration not found", Code: 404}
+	ErrPathExists       = &PathCRUDError{Type: "path_exists", Message: "PathHandler configuration already exists", Code: 409}
+	ErrInvalidPathName  = &PathCRUDError{Type: "invalid_path_name", Message: "invalid PathHandler name", Code: 400}
+	ErrValidationFailed = &PathCRUDError{Type: "validation_failed", Message: "PathHandler configuration validation failed", Code: 400}
 	ErrInternalError    = &PathCRUDError{Type: "internal_error", Message: "internal server error", Code: 500}
 )
 
@@ -51,7 +50,7 @@ func NewPathCRUDManager(config *conf.Conf, pathManager defs.APIPathManager, onCo
 	}
 }
 
-// ListPaths returns all path configurations with pagination support
+// ListPaths returns all PathHandler configurations with pagination support
 func (m *pathCRUDManager) ListPaths(itemsPerPage, page int) (*PathConfList, error) {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
@@ -75,18 +74,18 @@ func (m *pathCRUDManager) ListPaths(itemsPerPage, page int) (*PathConfList, erro
 		if err != nil {
 			continue // Skip invalid paths
 		}
-		
+
 		var pathConf PathConf
 		if err := json.Unmarshal(jsonData, &pathConf); err != nil {
 			continue // Skip invalid paths
 		}
-		
+
 		pathConf.Name = name
 		data.Items = append(data.Items, pathConf)
 	}
 
 	data.ItemCount = int64(len(data.Items))
-	
+
 	// Apply pagination if requested
 	if itemsPerPage > 0 {
 		pageCount, err := m.paginatePathConf(&data.Items, itemsPerPage, page)
@@ -105,12 +104,12 @@ func (m *pathCRUDManager) ListPaths(itemsPerPage, page int) (*PathConfList, erro
 	return data, nil
 }
 
-// GetPath returns a specific path configuration by name
+// GetPath returns a specific PathHandler configuration by name
 func (m *pathCRUDManager) GetPath(name string) (*conf.Path, error) {
 	if err := conf.IsValidPathName(name); err != nil {
 		return nil, &PathCRUDError{
 			Type:    ErrInvalidPathName.Type,
-			Message: fmt.Sprintf("invalid path name '%s': %v", name, err),
+			Message: fmt.Sprintf("invalid PathHandler name '%s': %v", name, err),
 			Code:    ErrInvalidPathName.Code,
 		}
 	}
@@ -122,7 +121,7 @@ func (m *pathCRUDManager) GetPath(name string) (*conf.Path, error) {
 	if !exists {
 		return nil, &PathCRUDError{
 			Type:    ErrPathNotFound.Type,
-			Message: fmt.Sprintf("path '%s' not found", name),
+			Message: fmt.Sprintf("PathHandler '%s' not found", name),
 			Code:    ErrPathNotFound.Code,
 		}
 	}
@@ -130,12 +129,12 @@ func (m *pathCRUDManager) GetPath(name string) (*conf.Path, error) {
 	return path, nil
 }
 
-// CreatePath creates a new path configuration
+// CreatePath creates a new PathHandler configuration
 func (m *pathCRUDManager) CreatePath(name string, pathConf *conf.OptionalPath) error {
 	if err := conf.IsValidPathName(name); err != nil {
 		return &PathCRUDError{
 			Type:    ErrInvalidPathName.Type,
-			Message: fmt.Sprintf("invalid path name '%s': %v", name, err),
+			Message: fmt.Sprintf("invalid PathHandler name '%s': %v", name, err),
 			Code:    ErrInvalidPathName.Code,
 		}
 	}
@@ -143,11 +142,11 @@ func (m *pathCRUDManager) CreatePath(name string, pathConf *conf.OptionalPath) e
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	// Check if path already exists
+	// Check if PathHandler already exists
 	if _, exists := m.conf.Paths[name]; exists {
 		return &PathCRUDError{
 			Type:    ErrPathExists.Type,
-			Message: fmt.Sprintf("path '%s' already exists", name),
+			Message: fmt.Sprintf("PathHandler '%s' already exists", name),
 			Code:    ErrPathExists.Code,
 		}
 	}
@@ -157,7 +156,7 @@ func (m *pathCRUDManager) CreatePath(name string, pathConf *conf.OptionalPath) e
 	if err := newConf.AddPath(name, pathConf); err != nil {
 		return &PathCRUDError{
 			Type:    ErrValidationFailed.Type,
-			Message: fmt.Sprintf("failed to add path '%s': %v", name, err),
+			Message: fmt.Sprintf("failed to add PathHandler '%s': %v", name, err),
 			Code:    ErrValidationFailed.Code,
 		}
 	}
@@ -165,7 +164,7 @@ func (m *pathCRUDManager) CreatePath(name string, pathConf *conf.OptionalPath) e
 	if err := newConf.Validate(nil); err != nil {
 		return &PathCRUDError{
 			Type:    ErrValidationFailed.Type,
-			Message: fmt.Sprintf("validation failed for path '%s': %v", name, err),
+			Message: fmt.Sprintf("validation failed for PathHandler '%s': %v", name, err),
 			Code:    ErrValidationFailed.Code,
 		}
 	}
@@ -178,12 +177,12 @@ func (m *pathCRUDManager) CreatePath(name string, pathConf *conf.OptionalPath) e
 	return nil
 }
 
-// UpdatePath partially updates an existing path configuration
+// UpdatePath partially updates an existing PathHandler configuration
 func (m *pathCRUDManager) UpdatePath(name string, pathConf *conf.OptionalPath) error {
 	if err := conf.IsValidPathName(name); err != nil {
 		return &PathCRUDError{
 			Type:    ErrInvalidPathName.Type,
-			Message: fmt.Sprintf("invalid path name '%s': %v", name, err),
+			Message: fmt.Sprintf("invalid PathHandler name '%s': %v", name, err),
 			Code:    ErrInvalidPathName.Code,
 		}
 	}
@@ -197,13 +196,13 @@ func (m *pathCRUDManager) UpdatePath(name string, pathConf *conf.OptionalPath) e
 		if errors.Is(err, conf.ErrPathNotFound) {
 			return &PathCRUDError{
 				Type:    ErrPathNotFound.Type,
-				Message: fmt.Sprintf("path '%s' not found", name),
+				Message: fmt.Sprintf("PathHandler '%s' not found", name),
 				Code:    ErrPathNotFound.Code,
 			}
 		}
 		return &PathCRUDError{
 			Type:    ErrValidationFailed.Type,
-			Message: fmt.Sprintf("failed to update path '%s': %v", name, err),
+			Message: fmt.Sprintf("failed to update PathHandler '%s': %v", name, err),
 			Code:    ErrValidationFailed.Code,
 		}
 	}
@@ -211,7 +210,7 @@ func (m *pathCRUDManager) UpdatePath(name string, pathConf *conf.OptionalPath) e
 	if err := newConf.Validate(nil); err != nil {
 		return &PathCRUDError{
 			Type:    ErrValidationFailed.Type,
-			Message: fmt.Sprintf("validation failed for path '%s': %v", name, err),
+			Message: fmt.Sprintf("validation failed for PathHandler '%s': %v", name, err),
 			Code:    ErrValidationFailed.Code,
 		}
 	}
@@ -224,12 +223,12 @@ func (m *pathCRUDManager) UpdatePath(name string, pathConf *conf.OptionalPath) e
 	return nil
 }
 
-// ReplacePath completely replaces an existing path configuration
+// ReplacePath completely replaces an existing PathHandler configuration
 func (m *pathCRUDManager) ReplacePath(name string, pathConf *conf.OptionalPath) error {
 	if err := conf.IsValidPathName(name); err != nil {
 		return &PathCRUDError{
 			Type:    ErrInvalidPathName.Type,
-			Message: fmt.Sprintf("invalid path name '%s': %v", name, err),
+			Message: fmt.Sprintf("invalid PathHandler name '%s': %v", name, err),
 			Code:    ErrInvalidPathName.Code,
 		}
 	}
@@ -243,13 +242,13 @@ func (m *pathCRUDManager) ReplacePath(name string, pathConf *conf.OptionalPath) 
 		if errors.Is(err, conf.ErrPathNotFound) {
 			return &PathCRUDError{
 				Type:    ErrPathNotFound.Type,
-				Message: fmt.Sprintf("path '%s' not found", name),
+				Message: fmt.Sprintf("PathHandler '%s' not found", name),
 				Code:    ErrPathNotFound.Code,
 			}
 		}
 		return &PathCRUDError{
 			Type:    ErrValidationFailed.Type,
-			Message: fmt.Sprintf("failed to replace path '%s': %v", name, err),
+			Message: fmt.Sprintf("failed to replace PathHandler '%s': %v", name, err),
 			Code:    ErrValidationFailed.Code,
 		}
 	}
@@ -257,7 +256,7 @@ func (m *pathCRUDManager) ReplacePath(name string, pathConf *conf.OptionalPath) 
 	if err := newConf.Validate(nil); err != nil {
 		return &PathCRUDError{
 			Type:    ErrValidationFailed.Type,
-			Message: fmt.Sprintf("validation failed for path '%s': %v", name, err),
+			Message: fmt.Sprintf("validation failed for PathHandler '%s': %v", name, err),
 			Code:    ErrValidationFailed.Code,
 		}
 	}
@@ -270,12 +269,12 @@ func (m *pathCRUDManager) ReplacePath(name string, pathConf *conf.OptionalPath) 
 	return nil
 }
 
-// DeletePath removes a path configuration
+// DeletePath removes a PathHandler configuration
 func (m *pathCRUDManager) DeletePath(name string) error {
 	if err := conf.IsValidPathName(name); err != nil {
 		return &PathCRUDError{
 			Type:    ErrInvalidPathName.Type,
-			Message: fmt.Sprintf("invalid path name '%s': %v", name, err),
+			Message: fmt.Sprintf("invalid PathHandler name '%s': %v", name, err),
 			Code:    ErrInvalidPathName.Code,
 		}
 	}
@@ -289,13 +288,13 @@ func (m *pathCRUDManager) DeletePath(name string) error {
 		if errors.Is(err, conf.ErrPathNotFound) {
 			return &PathCRUDError{
 				Type:    ErrPathNotFound.Type,
-				Message: fmt.Sprintf("path '%s' not found", name),
+				Message: fmt.Sprintf("PathHandler '%s' not found", name),
 				Code:    ErrPathNotFound.Code,
 			}
 		}
 		return &PathCRUDError{
 			Type:    ErrValidationFailed.Type,
-			Message: fmt.Sprintf("failed to remove path '%s': %v", name, err),
+			Message: fmt.Sprintf("failed to remove PathHandler '%s': %v", name, err),
 			Code:    ErrValidationFailed.Code,
 		}
 	}
@@ -303,7 +302,7 @@ func (m *pathCRUDManager) DeletePath(name string) error {
 	if err := newConf.Validate(nil); err != nil {
 		return &PathCRUDError{
 			Type:    ErrValidationFailed.Type,
-			Message: fmt.Sprintf("validation failed after removing path '%s': %v", name, err),
+			Message: fmt.Sprintf("validation failed after removing PathHandler '%s': %v", name, err),
 			Code:    ErrValidationFailed.Code,
 		}
 	}
@@ -316,12 +315,12 @@ func (m *pathCRUDManager) DeletePath(name string) error {
 	return nil
 }
 
-// ValidatePath validates a path configuration without saving it
+// ValidatePath validates a PathHandler configuration without saving it
 func (m *pathCRUDManager) ValidatePath(name string, pathConf *conf.OptionalPath) error {
 	if err := conf.IsValidPathName(name); err != nil {
 		return &PathCRUDError{
 			Type:    ErrInvalidPathName.Type,
-			Message: fmt.Sprintf("invalid path name '%s': %v", name, err),
+			Message: fmt.Sprintf("invalid PathHandler name '%s': %v", name, err),
 			Code:    ErrInvalidPathName.Code,
 		}
 	}
@@ -332,12 +331,12 @@ func (m *pathCRUDManager) ValidatePath(name string, pathConf *conf.OptionalPath)
 	// Create a temporary config for validation
 	tempConf := m.conf.Clone()
 
-	// Try to add/update the path temporarily
+	// Try to add/update the PathHandler temporarily
 	if _, exists := tempConf.Paths[name]; exists {
 		if err := tempConf.PatchPath(name, pathConf); err != nil {
 			return &PathCRUDError{
 				Type:    ErrValidationFailed.Type,
-				Message: fmt.Sprintf("validation failed for path '%s': %v", name, err),
+				Message: fmt.Sprintf("validation failed for PathHandler '%s': %v", name, err),
 				Code:    ErrValidationFailed.Code,
 			}
 		}
@@ -345,7 +344,7 @@ func (m *pathCRUDManager) ValidatePath(name string, pathConf *conf.OptionalPath)
 		if err := tempConf.AddPath(name, pathConf); err != nil {
 			return &PathCRUDError{
 				Type:    ErrValidationFailed.Type,
-				Message: fmt.Sprintf("validation failed for path '%s': %v", name, err),
+				Message: fmt.Sprintf("validation failed for PathHandler '%s': %v", name, err),
 				Code:    ErrValidationFailed.Code,
 			}
 		}
@@ -354,7 +353,7 @@ func (m *pathCRUDManager) ValidatePath(name string, pathConf *conf.OptionalPath)
 	if err := tempConf.Validate(nil); err != nil {
 		return &PathCRUDError{
 			Type:    ErrValidationFailed.Type,
-			Message: fmt.Sprintf("validation failed for path '%s': %v", name, err),
+			Message: fmt.Sprintf("validation failed for PathHandler '%s': %v", name, err),
 			Code:    ErrValidationFailed.Code,
 		}
 	}
@@ -362,7 +361,7 @@ func (m *pathCRUDManager) ValidatePath(name string, pathConf *conf.OptionalPath)
 	return nil
 }
 
-// GetPathDefaults returns the default path configuration
+// GetPathDefaults returns the default PathHandler configuration
 func (m *pathCRUDManager) GetPathDefaults() *conf.Path {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
@@ -370,7 +369,7 @@ func (m *pathCRUDManager) GetPathDefaults() *conf.Path {
 	return &m.conf.PathDefaults
 }
 
-// UpdatePathDefaults updates the default path configuration
+// UpdatePathDefaults updates the default PathHandler configuration
 func (m *pathCRUDManager) UpdatePathDefaults(pathConf *conf.OptionalPath) error {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
@@ -381,7 +380,7 @@ func (m *pathCRUDManager) UpdatePathDefaults(pathConf *conf.OptionalPath) error 
 	if err := newConf.Validate(nil); err != nil {
 		return &PathCRUDError{
 			Type:    ErrValidationFailed.Type,
-			Message: fmt.Sprintf("validation failed for path defaults: %v", err),
+			Message: fmt.Sprintf("validation failed for PathHandler defaults: %v", err),
 			Code:    ErrValidationFailed.Code,
 		}
 	}
@@ -399,7 +398,7 @@ func (m *pathCRUDManager) GetActivePathsInfo(itemsPerPage, page int) (*defs.APIP
 	if m.pathManager == nil {
 		return nil, &PathCRUDError{
 			Type:    ErrInternalError.Type,
-			Message: "path manager not available",
+			Message: "PathHandler manager not available",
 			Code:    ErrInternalError.Code,
 		}
 	}
@@ -429,12 +428,12 @@ func (m *pathCRUDManager) GetActivePathsInfo(itemsPerPage, page int) (*defs.APIP
 	return data, nil
 }
 
-// GetActivePathInfo returns information about a specific active path
+// GetActivePathInfo returns information about a specific active PathHandler
 func (m *pathCRUDManager) GetActivePathInfo(name string) (*defs.APIPath, error) {
 	if err := conf.IsValidPathName(name); err != nil {
 		return nil, &PathCRUDError{
 			Type:    ErrInvalidPathName.Type,
-			Message: fmt.Sprintf("invalid path name '%s': %v", name, err),
+			Message: fmt.Sprintf("invalid PathHandler name '%s': %v", name, err),
 			Code:    ErrInvalidPathName.Code,
 		}
 	}
@@ -442,7 +441,7 @@ func (m *pathCRUDManager) GetActivePathInfo(name string) (*defs.APIPath, error) 
 	if m.pathManager == nil {
 		return nil, &PathCRUDError{
 			Type:    ErrInternalError.Type,
-			Message: "path manager not available",
+			Message: "PathHandler manager not available",
 			Code:    ErrInternalError.Code,
 		}
 	}
@@ -451,7 +450,7 @@ func (m *pathCRUDManager) GetActivePathInfo(name string) (*defs.APIPath, error) 
 	if err != nil {
 		return nil, &PathCRUDError{
 			Type:    ErrPathNotFound.Type,
-			Message: fmt.Sprintf("active path '%s' not found: %v", name, err),
+			Message: fmt.Sprintf("active PathHandler '%s' not found: %v", name, err),
 			Code:    ErrPathNotFound.Code,
 		}
 	}
@@ -523,7 +522,7 @@ func (m *pathCRUDManager) paginatePathConf(items *[]PathConf, itemsPerPage, page
 	return totalPages, nil
 }
 
-// Helper method for API path pagination
+// Helper method for API PathHandler pagination
 func (m *pathCRUDManager) paginateAPIPaths(items *[]*defs.APIPath, itemsPerPage, page int) (int, error) {
 	if itemsPerPage <= 0 {
 		return 1, nil

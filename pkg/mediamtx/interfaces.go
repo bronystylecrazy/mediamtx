@@ -14,7 +14,7 @@ type MediaMTXManager interface {
 	Stop() error
 	Restart() error
 	IsRunning() bool
-	
+
 	// Configuration management
 	GetConfiguration() *conf.Conf
 	UpdateConfiguration(*conf.Conf) error
@@ -24,7 +24,7 @@ type MediaMTXManager interface {
 	GetPathCRUDManager() PathCRUDManager
 }
 
-// PathCRUDManager provides CRUD operations for path configurations
+// PathCRUDManager provides CRUD operations for PathHandler configurations
 // This is the main interface for managing paths programmatically
 type PathCRUDManager interface {
 	// Core CRUD operations
@@ -34,18 +34,18 @@ type PathCRUDManager interface {
 	UpdatePath(name string, pathConf *conf.OptionalPath) error
 	ReplacePath(name string, pathConf *conf.OptionalPath) error
 	DeletePath(name string) error
-	
+
 	// Validation and defaults
 	ValidatePath(name string, pathConf *conf.OptionalPath) error
 	GetPathDefaults() *conf.Path
 	UpdatePathDefaults(pathConf *conf.OptionalPath) error
-	
-	// Active path information (requires connection to running server)
+
+	// Active PathHandler information (requires connection to running server)
 	GetActivePathsInfo(itemsPerPage, page int) (*defs.APIPathList, error)
 	GetActivePathInfo(name string) (*defs.APIPath, error)
 }
 
-// PathHelper provides utility methods for creating path configurations
+// PathHelper provides utility methods for creating PathHandler configurations
 type PathHelperInterface interface {
 	CreateBasicPath() *conf.OptionalPath
 	CreateRTSPPath(rtspURL string) *conf.OptionalPath
@@ -56,7 +56,7 @@ type PathHelperInterface interface {
 	CreateOnDemandPath(runOnDemandCmd string) *conf.OptionalPath
 }
 
-// PathValidator provides validation methods for path configurations
+// PathValidator provides validation methods for PathHandler configurations
 type PathValidatorInterface interface {
 	ValidatePathName(name string) error
 	ValidateRTSPURL(url string) error
@@ -64,7 +64,7 @@ type PathValidatorInterface interface {
 	ValidateHLSURL(url string) error
 }
 
-// PathAnalyzer provides analysis methods for path configurations and status
+// PathAnalyzer provides analysis methods for PathHandler configurations and status
 type PathAnalyzerInterface interface {
 	AnalyzePathSource(path *conf.Path) map[string]interface{}
 	AnalyzePathStatus(apiPath *defs.APIPath) map[string]interface{}
@@ -93,12 +93,12 @@ type ServerManager interface {
 	Restart() error
 	IsRunning() bool
 	GetStatus() map[string]interface{}
-	
+
 	// Server configuration
 	GetListenAddresses() map[string]string
 	GetVersion() string
 	GetUptime() string
-	
+
 	// Protocol server management
 	EnableProtocol(protocol string) error
 	DisableProtocol(protocol string) error
@@ -112,13 +112,13 @@ type ConnectionManager interface {
 	ListRTMPConnections() ([]*defs.APIRTMPConn, error)
 	ListSRTConnections() ([]*defs.APISRTConn, error)
 	ListWebRTCConnections() ([]*defs.APIWebRTCSession, error)
-	
+
 	// Connection management
 	DisconnectRTSPConnection(id string) error
 	DisconnectRTMPConnection(id string) error
 	DisconnectSRTConnection(id string) error
 	DisconnectWebRTCConnection(id string) error
-	
+
 	// Session management
 	ListRTSPSessions() ([]*defs.APIRTSPSession, error)
 	DisconnectRTSPSession(id string) error
@@ -129,12 +129,12 @@ type StreamManager interface {
 	// Stream information
 	GetStreamInfo(pathName string) (*defs.APIPath, error)
 	ListActiveStreams() ([]*defs.APIPath, error)
-	
+
 	// Stream control
 	StartStream(pathName string) error
 	StopStream(pathName string) error
 	RestartStream(pathName string) error
-	
+
 	// Stream statistics
 	GetStreamStats(pathName string) (map[string]interface{}, error)
 	GetGlobalStreamStats() (map[string]interface{}, error)
@@ -146,12 +146,12 @@ type RecordingManager interface {
 	StartRecording(pathName string) error
 	StopRecording(pathName string) error
 	IsRecording(pathName string) (bool, error)
-	
+
 	// Recording file management
 	ListRecordings(pathName string) ([]*defs.APIRecording, error)
 	GetRecordingInfo(pathName, fileName string) (*defs.APIRecordingSegment, error)
 	DeleteRecording(pathName, fileName string) error
-	
+
 	// Recording configuration
 	GetRecordingPath(pathName string) (string, error)
 	SetRecordingPath(pathName, recordPath string) error
@@ -164,12 +164,12 @@ type AuthManager interface {
 	UpdateUser(username, password string, permissions []string) error
 	DeleteUser(username string) error
 	ListUsers() ([]string, error)
-	
+
 	// Permission management
 	GrantPermission(username, pathPattern, action string) error
 	RevokePermission(username, pathPattern, action string) error
 	CheckPermission(username, pathPattern, action string) (bool, error)
-	
+
 	// Authentication methods
 	SetAuthMethod(method string) error
 	GetAuthMethod() string
@@ -182,15 +182,15 @@ type MetricsManager interface {
 	GetSystemMetrics() (map[string]interface{}, error)
 	GetMemoryUsage() (map[string]interface{}, error)
 	GetCPUUsage() (float64, error)
-	
+
 	// Traffic metrics
 	GetTrafficMetrics() (map[string]interface{}, error)
 	GetProtocolMetrics(protocol string) (map[string]interface{}, error)
-	
+
 	// Path metrics
 	GetPathMetrics(pathName string) (map[string]interface{}, error)
 	GetTopPaths(limit int) ([]map[string]interface{}, error)
-	
+
 	// Export metrics
 	ExportPrometheusMetrics() (string, error)
 	ExportJSONMetrics() (map[string]interface{}, error)
@@ -202,15 +202,15 @@ type ConfigurationManager interface {
 	LoadFromFile(filePath string) error
 	SaveToFile(filePath string) error
 	GetConfigPath() string
-	
+
 	// Configuration validation
 	ValidateConfiguration(config *conf.Conf) error
 	GetConfigurationErrors() []error
-	
+
 	// Configuration sections
 	GetGlobalConfig() *conf.Global
 	UpdateGlobalConfig(global *conf.Global) error
-	
+
 	// Configuration templates
 	GetDefaultConfiguration() *conf.Conf
 	CreateConfigurationTemplate() map[string]interface{}
@@ -221,13 +221,13 @@ type EventManager interface {
 	// Event subscription
 	Subscribe(eventType string, handler func(interface{})) error
 	Unsubscribe(eventType string, handler func(interface{})) error
-	
+
 	// Event publishing
 	PublishEvent(eventType string, data interface{}) error
-	
+
 	// Event types
 	GetSupportedEventTypes() []string
-	
+
 	// Event history
 	GetRecentEvents(limit int) ([]interface{}, error)
 	ClearEventHistory() error

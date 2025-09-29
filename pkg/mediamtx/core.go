@@ -22,7 +22,7 @@ import (
 	"github.com/bluenviron/mediamtx/pkg/mediamtx/logger"
 	"github.com/bluenviron/mediamtx/pkg/mediamtx/metrics"
 	"github.com/bluenviron/mediamtx/pkg/mediamtx/playback"
-	
+
 	// Keep internal packages that we haven't exposed yet
 	"github.com/bluenviron/mediamtx/internal/confwatcher"
 	"github.com/bluenviron/mediamtx/internal/pprof"
@@ -106,7 +106,8 @@ type Core struct {
 type LogFunc = func(level LogLevel, format string, args ...interface{})
 
 type Options struct {
-	LogFunc LogFunc
+	LogFunc  LogFunc
+	PathHook PathHook
 }
 
 // New allocates a Core.

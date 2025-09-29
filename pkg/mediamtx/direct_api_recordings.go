@@ -29,7 +29,7 @@ func (api *MediaMTXAPI) GetRecordings(query *RecordingQuery, pagination *Paginat
 		return nil, fmt.Errorf("failed to get configuration: %v", err)
 	}
 
-	// If no path is specified in query, get recordings for all paths
+	// If no PathHandler is specified in query, get recordings for all paths
 	var pathNames []string
 	if query != nil && query.Path != "" {
 		pathNames = []string{query.Path}
@@ -54,19 +54,19 @@ func (api *MediaMTXAPI) GetRecordings(query *RecordingQuery, pagination *Paginat
 				filteredSegments := []*defs.APIRecordingSegment{}
 				for _, segment := range recording.Segments {
 					include := true
-					
+
 					if query.StartTime != nil && segment.Start.Before(*query.StartTime) {
 						include = false
 					}
 					if query.EndTime != nil && segment.Start.After(*query.EndTime) {
 						include = false
 					}
-					
+
 					if include {
 						filteredSegments = append(filteredSegments, segment)
 					}
 				}
-				
+
 				if len(filteredSegments) > 0 {
 					filteredRecording := &defs.APIRecording{
 						Name:     recording.Name,
@@ -107,12 +107,12 @@ func (api *MediaMTXAPI) GetRecording(pathName string) (*defs.APIRecording, error
 
 	pathConf, exists := conf.Paths[pathName]
 	if !exists {
-		return nil, fmt.Errorf("path '%s' not found", pathName)
+		return nil, fmt.Errorf("PathHandler '%s' not found", pathName)
 	}
 
 	recording := api.recordingsOfPath(pathConf, pathName)
 	if recording == nil {
-		return nil, fmt.Errorf("no recordings found for path '%s'", pathName)
+		return nil, fmt.Errorf("no recordings found for PathHandler '%s'", pathName)
 	}
 
 	return recording, nil
@@ -127,11 +127,11 @@ func (api *MediaMTXAPI) DeleteRecordingSegment(pathName string, segmentStart tim
 
 	pathConf, _, err := conf.FindPathConf(globalConf.Paths, pathName)
 	if err != nil {
-		return fmt.Errorf("path configuration error: %v", err)
+		return fmt.Errorf("PathHandler configuration error: %v", err)
 	}
 
 	pathFormat := recordstore.PathAddExtension(
-		strings.ReplaceAll(pathConf.RecordPath, "%path", pathName),
+		strings.ReplaceAll(pathConf.RecordPath, "%PathHandler", pathName),
 		pathConf.RecordFormat,
 	)
 
@@ -147,7 +147,7 @@ func (api *MediaMTXAPI) DeleteRecordingSegment(pathName string, segmentStart tim
 	return nil
 }
 
-// GetRecordingsByPath returns recordings for a specific path
+// GetRecordingsByPath returns recordings for a specific PathHandler
 func (api *MediaMTXAPI) GetRecordingsByPath(pathName string, pagination *PaginationParams) (*defs.APIRecordingList, error) {
 	query := &RecordingQuery{Path: pathName}
 	return api.GetRecordings(query, pagination)
@@ -166,7 +166,7 @@ func (api *MediaMTXAPI) GetRecordingsByTimeRange(startTime, endTime time.Time, p
 // RECORDING HELPER METHODS
 // =============================================================================
 
-// GetRecordingInfo provides detailed information about recordings for a path
+// GetRecordingInfo provides detailed information about recordings for a PathHandler
 func (api *MediaMTXAPI) GetRecordingInfo(pathName string) (*RecordingInfo, error) {
 	recording, err := api.GetRecording(pathName)
 	if err != nil {
@@ -175,7 +175,7 @@ func (api *MediaMTXAPI) GetRecordingInfo(pathName string) (*RecordingInfo, error
 
 	info := &RecordingInfo{
 		PathName:        pathName,
-		TotalRecordings: 1, // One recording per path in this implementation
+		TotalRecordings: 1, // One recording per PathHandler in this implementation
 	}
 
 	if len(recording.Segments) > 0 {
@@ -219,63 +219,63 @@ type RecordingInfo struct {
 // RECORDING OPERATIONS
 // =============================================================================
 
-// StartRecording starts recording for a specific path
+// StartRecording starts recording for a specific PathHandler
 func (api *MediaMTXAPI) StartRecording(pathName string) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
 
 	// Get current configuration
 	newConf := api.core.Conf.Clone()
-	
-	// Check if path exists
+
+	// Check if PathHandler exists
 	pathConfig, exists := newConf.Paths[pathName]
 	if !exists {
-		return fmt.Errorf("path '%s' not found", pathName)
+		return fmt.Errorf("PathHandler '%s' not found", pathName)
 	}
-	
+
 	// Update recording flag directly
 	pathConfig.Record = true
-	
+
 	// Validate and apply
 	if err := newConf.Validate(nil); err != nil {
 		return fmt.Errorf("configuration validation failed: %v", err)
 	}
-	
+
 	api.core.Conf = newConf
 	api.core.APIConfigSet(newConf)
-	
+
 	return nil
 }
 
-// StopRecording stops recording for a specific path
+// StopRecording stops recording for a specific PathHandler
 func (api *MediaMTXAPI) StopRecording(pathName string) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
 
 	// Get current configuration
 	newConf := api.core.Conf.Clone()
-	
-	// Check if path exists
+
+	// Check if PathHandler exists
 	pathConfig, exists := newConf.Paths[pathName]
 	if !exists {
-		return fmt.Errorf("path '%s' not found", pathName)
+		return fmt.Errorf("PathHandler '%s' not found", pathName)
 	}
-	
+
 	// Update recording flag directly
 	pathConfig.Record = false
-	
+
 	// Validate and apply
 	if err := newConf.Validate(nil); err != nil {
 		return fmt.Errorf("configuration validation failed: %v", err)
 	}
-	
+
 	api.core.Conf = newConf
 	api.core.APIConfigSet(newConf)
-	
+
 	return nil
 }
 
-// IsRecording checks if a path is currently recording
+// IsRecording checks if a PathHandler is currently recording
 func (api *MediaMTXAPI) IsRecording(pathName string) (bool, error) {
 	pathConfig, err := api.GetPathConfig(pathName)
 	if err != nil {
@@ -285,35 +285,35 @@ func (api *MediaMTXAPI) IsRecording(pathName string) (bool, error) {
 	return pathConfig.Record, nil
 }
 
-// SetRecordingPath updates the recording path for a specific path
+// SetRecordingPath updates the recording PathHandler for a specific PathHandler
 func (api *MediaMTXAPI) SetRecordingPath(pathName, recordingPath string) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
 
 	// Get current configuration
 	newConf := api.core.Conf.Clone()
-	
-	// Check if path exists
+
+	// Check if PathHandler exists
 	pathConfig, exists := newConf.Paths[pathName]
 	if !exists {
-		return fmt.Errorf("path '%s' not found", pathName)
+		return fmt.Errorf("PathHandler '%s' not found", pathName)
 	}
-	
-	// Update recording path directly
+
+	// Update recording PathHandler directly
 	pathConfig.RecordPath = recordingPath
-	
+
 	// Validate and apply
 	if err := newConf.Validate(nil); err != nil {
 		return fmt.Errorf("configuration validation failed: %v", err)
 	}
-	
+
 	api.core.Conf = newConf
 	api.core.APIConfigSet(newConf)
-	
+
 	return nil
 }
 
-// GetRecordingPath returns the recording path for a specific path
+// GetRecordingPath returns the recording PathHandler for a specific PathHandler
 func (api *MediaMTXAPI) GetRecordingPath(pathName string) (string, error) {
 	pathConfig, err := api.GetPathConfig(pathName)
 	if err != nil {
@@ -327,7 +327,7 @@ func (api *MediaMTXAPI) GetRecordingPath(pathName string) (string, error) {
 // INTERNAL HELPER METHODS
 // =============================================================================
 
-// recordingsOfPath creates an APIRecording for a given path, based on the original internal/api implementation
+// recordingsOfPath creates an APIRecording for a given PathHandler, based on the original internal/api implementation
 func (api *MediaMTXAPI) recordingsOfPath(pathConf *conf.Path, pathName string) *defs.APIRecording {
 	ret := &defs.APIRecording{
 		Name: pathName,

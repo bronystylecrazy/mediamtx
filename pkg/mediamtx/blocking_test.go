@@ -8,7 +8,7 @@ import (
 
 func TestAddPathConfigDoesNotBlock(t *testing.T) {
 	ctx := context.Background()
-	
+
 	// Create a Core instance without starting it
 	core, err := New(Options{})
 	if err != nil {
@@ -16,10 +16,10 @@ func TestAddPathConfigDoesNotBlock(t *testing.T) {
 	}
 	defer core.Close(ctx)
 
-	// Create API instance  
+	// Create API instance
 	api := NewMediaMTXAPI(core)
 
-	// Create a test path configuration
+	// Create a test PathHandler configuration
 	pathConf := NewOptionalPathWithOptions(PathOptions{
 		Name:   "test-blocking",
 		Source: "publisher",
@@ -42,7 +42,7 @@ func TestAddPathConfigDoesNotBlock(t *testing.T) {
 		t.Fatal("❌ AddPathConfig blocked for more than 2 seconds - this indicates the fix didn't work")
 	}
 
-	// Verify the path was added to the configuration
+	// Verify the PathHandler was added to the configuration
 	paths := core.Conf.Paths
 	if paths["test-blocking"] == nil {
 		t.Fatal("Path was not added to configuration")
@@ -53,7 +53,7 @@ func TestAddPathConfigDoesNotBlock(t *testing.T) {
 
 func TestAddPathConfigWithRunningCore(t *testing.T) {
 	ctx := context.Background()
-	
+
 	// Create a Core instance and start it
 	core, err := New(Options{})
 	if err != nil {
@@ -71,10 +71,10 @@ func TestAddPathConfigWithRunningCore(t *testing.T) {
 	// Give Core time to start
 	time.Sleep(100 * time.Millisecond)
 
-	// Create API instance  
+	// Create API instance
 	api := NewMediaMTXAPI(core)
 
-	// Create a test path configuration
+	// Create a test PathHandler configuration
 	pathConf := NewOptionalPathWithOptions(PathOptions{
 		Name:   "test-running",
 		Source: "publisher",
@@ -97,7 +97,7 @@ func TestAddPathConfigWithRunningCore(t *testing.T) {
 		t.Fatal("❌ AddPathConfig blocked for more than 2 seconds")
 	}
 
-	// Verify the path was added to the configuration
+	// Verify the PathHandler was added to the configuration
 	paths := core.Conf.Paths
 	if paths["test-running"] == nil {
 		t.Fatal("Path was not added to configuration")

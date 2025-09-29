@@ -17,22 +17,22 @@ func ExamplePathCRUDUsage() {
 		Paths: make(map[string]*conf.Path),
 	}
 
-	// Create path CRUD manager
+	// Create PathHandler CRUD manager
 	pathManager := NewPathCRUDManager(config, nil, func(newConf *conf.Conf) {
 		fmt.Printf("Configuration updated with %d paths\n", len(newConf.Paths))
 	})
 
-	// Create a simple path using JSON
+	// Create a simple PathHandler using JSON
 	pathJSON := `{"source": "publisher", "record": false}`
 	var optPath conf.OptionalPath
 	if err := json.Unmarshal([]byte(pathJSON), &optPath); err != nil {
-		fmt.Printf("Error creating path: %v\n", err)
+		fmt.Printf("Error creating PathHandler: %v\n", err)
 		return
 	}
 
-	// Create the path
+	// Create the PathHandler
 	if err := pathManager.CreatePath("test_stream", &optPath); err != nil {
-		fmt.Printf("Error creating path: %v\n", err)
+		fmt.Printf("Error creating PathHandler: %v\n", err)
 	} else {
 		fmt.Println("✅ Path created successfully")
 	}
@@ -44,14 +44,14 @@ func ExamplePathCRUDUsage() {
 		fmt.Printf("Found %d paths\n", pathList.ItemCount)
 	}
 
-	// Get path
+	// Get PathHandler
 	if path, err := pathManager.GetPath("test_stream"); err != nil {
-		fmt.Printf("Error getting path: %v\n", err)
+		fmt.Printf("Error getting PathHandler: %v\n", err)
 	} else {
 		fmt.Printf("Path source: %s\n", path.Source)
 	}
 
-	// Update path to enable recording
+	// Update PathHandler to enable recording
 	updateJSON := `{"record": true, "recordPath": "/recordings"}`
 	var updatePath conf.OptionalPath
 	if err := json.Unmarshal([]byte(updateJSON), &updatePath); err != nil {
@@ -60,14 +60,14 @@ func ExamplePathCRUDUsage() {
 	}
 
 	if err := pathManager.UpdatePath("test_stream", &updatePath); err != nil {
-		fmt.Printf("Error updating path: %v\n", err)
+		fmt.Printf("Error updating PathHandler: %v\n", err)
 	} else {
 		fmt.Println("✅ Path updated successfully")
 	}
 
-	// Delete path
+	// Delete PathHandler
 	if err := pathManager.DeletePath("test_stream"); err != nil {
-		fmt.Printf("Error deleting path: %v\n", err)
+		fmt.Printf("Error deleting PathHandler: %v\n", err)
 	} else {
 		fmt.Println("✅ Path deleted successfully")
 	}
@@ -79,7 +79,7 @@ func ExamplePathHelperUsage() {
 	validator := NewPathValidator()
 	analyzer := NewPathAnalyzer()
 
-	// Validate path names
+	// Validate PathHandler names
 	testNames := []string{"valid_path", "camera1", "stream/sub", "invalid name"}
 	for _, name := range testNames {
 		if err := validator.ValidatePathName(name); err != nil {
@@ -105,12 +105,12 @@ func ExamplePathHelperUsage() {
 		}
 	}
 
-	// Create path configurations using new factory methods
+	// Create PathHandler configurations using new factory methods
 	basicPath := NewSimplePathConfig("example_basic", "publisher", false).Build()
 	rtspPath := NewRTSPPathConfig("example_rtsp", "rtsp://camera.example.com/stream", false).Build()
-	
-	fmt.Printf("Created basic path: %v\n", basicPath.Name != "")
-	fmt.Printf("Created RTSP path: %v\n", rtspPath.Name != "")
+
+	fmt.Printf("Created basic PathHandler: %v\n", basicPath.Name != "")
+	fmt.Printf("Created RTSP PathHandler: %v\n", rtspPath.Name != "")
 
 	// Analyze paths (requires actual Path objects, not OptionalPath)
 	samplePath := &conf.Path{
@@ -119,13 +119,13 @@ func ExamplePathHelperUsage() {
 	}
 
 	analysis := analyzer.AnalyzePathSource(samplePath)
-	fmt.Printf("Path analysis: type=%s, description=%s\n", 
+	fmt.Printf("Path analysis: type=%s, description=%s\n",
 		analysis["type"], analysis["description"])
 }
 
-// ExampleAPIPathInfo demonstrates working with active path information
+// ExampleAPIPathInfo demonstrates working with active PathHandler information
 func ExampleAPIPathInfo() {
-	// This would typically be called with an actual path manager that has access to active paths
+	// This would typically be called with an actual PathHandler manager that has access to active paths
 	// For demonstration, we'll create mock data
 
 	mockAPIPath := &defs.APIPath{
@@ -171,13 +171,13 @@ func NewPathCRUDManagerAPI(manager PathCRUDManager) *PathCRUDManagerAPI {
 	}
 }
 
-// CreateSimplePath creates a path with simple JSON configuration
+// CreateSimplePath creates a PathHandler with simple JSON configuration
 func (api *PathCRUDManagerAPI) CreateSimplePath(name, source string, enableRecording bool) error {
 	pathConfig := map[string]interface{}{
 		"source": source,
 		"record": enableRecording,
 	}
-	
+
 	if enableRecording {
 		pathConfig["recordPath"] = fmt.Sprintf("/recordings/%s", name)
 		pathConfig["recordFormat"] = 0 // FMP4
@@ -185,18 +185,18 @@ func (api *PathCRUDManagerAPI) CreateSimplePath(name, source string, enableRecor
 
 	jsonData, err := json.Marshal(pathConfig)
 	if err != nil {
-		return fmt.Errorf("failed to marshal path config: %v", err)
+		return fmt.Errorf("failed to marshal PathHandler config: %v", err)
 	}
 
 	var optPath conf.OptionalPath
 	if err := json.Unmarshal(jsonData, &optPath); err != nil {
-		return fmt.Errorf("failed to unmarshal path config: %v", err)
+		return fmt.Errorf("failed to unmarshal PathHandler config: %v", err)
 	}
 
 	return api.manager.CreatePath(name, &optPath)
 }
 
-// EnableRecording enables recording for an existing path
+// EnableRecording enables recording for an existing PathHandler
 func (api *PathCRUDManagerAPI) EnableRecording(name, recordPath string) error {
 	updateConfig := map[string]interface{}{
 		"record":     true,
@@ -228,13 +228,13 @@ func (api *PathCRUDManagerAPI) GetPathSummary() (map[string]interface{}, error) 
 
 	summary := make(map[string]interface{})
 	summary["total_paths"] = pathList.ItemCount
-	
+
 	// Convert PathConf slice to conf.Path slice for compatibility
 	confPaths, err := ConvertPathConfSliceToConfPaths(pathList.Items)
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert path configurations: %v", err)
+		return nil, fmt.Errorf("failed to convert PathHandler configurations: %v", err)
 	}
-	
+
 	// Count by type
 	typeCounts := stats.CountPathsByType(confPaths)
 	summary["by_type"] = typeCounts

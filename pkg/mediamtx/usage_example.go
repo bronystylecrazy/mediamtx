@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-// ExampleCorePathManagement demonstrates how to use the Core with path CRUD operations
+// ExampleCorePathManagement demonstrates how to use the Core with PathHandler CRUD operations
 func ExampleCorePathManagement() {
 	// Create a MediaMTX Core instance
 	core, err := New(Options{
@@ -25,26 +25,26 @@ func ExampleCorePathManagement() {
 	// Example 1: Create different types of paths
 	fmt.Println("Creating paths...")
 
-	// Create a publisher path (accepts streams from publishers)
+	// Create a publisher PathHandler (accepts streams from publishers)
 	if err := core.CreatePublisherPath("live_stream", true); err != nil {
-		log.Printf("Failed to create publisher path: %v", err)
+		log.Printf("Failed to create publisher PathHandler: %v", err)
 	} else {
-		fmt.Println("✅ Created publisher path: live_stream")
+		fmt.Println("✅ Created publisher PathHandler: live_stream")
 	}
 
-	// Create an RTSP path (pulls from RTSP camera)
+	// Create an RTSP PathHandler (pulls from RTSP camera)
 	if err := core.CreateRTSPPath("camera1", "rtsp://camera.example.com/stream", false); err != nil {
-		log.Printf("Failed to create RTSP path: %v", err)
+		log.Printf("Failed to create RTSP PathHandler: %v", err)
 	} else {
-		fmt.Println("✅ Created RTSP path: camera1")
+		fmt.Println("✅ Created RTSP PathHandler: camera1")
 	}
 
-	// Create a simple path using JSON
+	// Create a simple PathHandler using JSON
 	jsonConfig := `{"source": "publisher", "record": false, "maxReaders": 50}`
 	if err := core.CreatePathFromJSON("api_stream", jsonConfig); err != nil {
-		log.Printf("Failed to create path from JSON: %v", err)
+		log.Printf("Failed to create PathHandler from JSON: %v", err)
 	} else {
-		fmt.Println("✅ Created path from JSON: api_stream")
+		fmt.Println("✅ Created PathHandler from JSON: api_stream")
 	}
 
 	// Example 2: Manage existing paths
@@ -60,34 +60,34 @@ func ExampleCorePathManagement() {
 		}
 	}
 
-	// Get path information
+	// Get PathHandler information
 	if pathInfo, err := core.GetPathInfo("live_stream"); err != nil {
-		log.Printf("Failed to get path info: %v", err)
+		log.Printf("Failed to get PathHandler info: %v", err)
 	} else {
-		fmt.Printf("📊 Path 'live_stream' info: active=%v, type=%s\n", 
+		fmt.Printf("📊 Path 'live_stream' info: active=%v, type=%s\n",
 			pathInfo["active"], pathInfo["analysis"].(map[string]interface{})["type"])
 	}
 
 	// Example 3: Update paths
 	fmt.Println("\nUpdating paths...")
 
-	// Enable recording for a path
+	// Enable recording for a PathHandler
 	if err := core.EnablePathRecording("camera1", "/recordings/camera1"); err != nil {
 		log.Printf("Failed to enable recording: %v", err)
 	} else {
 		fmt.Println("✅ Enabled recording for camera1")
 	}
 
-	// Update path source
+	// Update PathHandler source
 	if err := core.UpdatePathSource("camera1", "rtsp://new-camera.example.com/stream"); err != nil {
 		log.Printf("Failed to update source: %v", err)
 	} else {
 		fmt.Println("✅ Updated camera1 source")
 	}
 
-	// Clone a path
+	// Clone a PathHandler
 	if err := core.ClonePath("live_stream", "live_stream_backup"); err != nil {
-		log.Printf("Failed to clone path: %v", err)
+		log.Printf("Failed to clone PathHandler: %v", err)
 	} else {
 		fmt.Println("✅ Cloned live_stream to live_stream_backup")
 	}
@@ -95,13 +95,13 @@ func ExampleCorePathManagement() {
 	// Example 4: Get statistics and overview
 	fmt.Println("\nGetting statistics...")
 
-	// Get path statistics
+	// Get PathHandler statistics
 	if stats, err := core.GetPathStats(); err != nil {
 		log.Printf("Failed to get stats: %v", err)
 	} else {
-		fmt.Printf("📊 Total paths: %v, Recording enabled: %v\n", 
+		fmt.Printf("📊 Total paths: %v, Recording enabled: %v\n",
 			stats["total_configured"], stats["recording_enabled"])
-		
+
 		if byType, ok := stats["by_type"].(map[string]int); ok {
 			fmt.Printf("📊 By type: %+v\n", byType)
 		}
@@ -111,7 +111,7 @@ func ExampleCorePathManagement() {
 	if allPaths, err := core.ListAllPaths(); err != nil {
 		log.Printf("Failed to list all paths: %v", err)
 	} else {
-		fmt.Printf("📋 All paths: %d configured, %d active\n", 
+		fmt.Printf("📋 All paths: %d configured, %d active\n",
 			allPaths["total_configured"], allPaths["total_active"])
 	}
 
@@ -124,14 +124,14 @@ func ExampleCorePathManagement() {
 	if pathList, err := pathManager.ListPaths(2, 1); err != nil {
 		log.Printf("Failed to list paths: %v", err)
 	} else {
-		fmt.Printf("📋 Page 1 (2 items): %d total, %d on this page\n", 
+		fmt.Printf("📋 Page 1 (2 items): %d total, %d on this page\n",
 			pathList.ItemCount, len(pathList.Items))
 	}
 
-	// Validate a path configuration without creating it
+	// Validate a PathHandler configuration without creating it
 	jsonConfig = `{"source": "rtsp://test.example.com/stream", "record": true}`
 	if err := core.UpdatePathFromJSON("validation_test", jsonConfig); err != nil {
-		fmt.Printf("✅ Validation correctly failed for non-existent path: %v\n", err)
+		fmt.Printf("✅ Validation correctly failed for non-existent PathHandler: %v\n", err)
 	}
 
 	// Example 6: Clean up
@@ -140,16 +140,16 @@ func ExampleCorePathManagement() {
 	pathsToRemove := []string{"api_stream", "live_stream_backup", "camera1"}
 	for _, pathName := range pathsToRemove {
 		if err := core.RemovePath(pathName); err != nil {
-			log.Printf("Failed to remove path '%s': %v", pathName, err)
+			log.Printf("Failed to remove PathHandler '%s': %v", pathName, err)
 		} else {
-			fmt.Printf("🗑️ Removed path: %s\n", pathName)
+			fmt.Printf("🗑️ Removed PathHandler: %s\n", pathName)
 		}
 	}
 
 	fmt.Println("\n✅ Example completed successfully!")
 }
 
-// ExampleAdvancedPathOperations demonstrates advanced path operations
+// ExampleAdvancedPathOperations demonstrates advanced PathHandler operations
 func ExampleAdvancedPathOperations() {
 	// Create core instance (shortened for example)
 	core, _ := New(Options{})
@@ -163,9 +163,9 @@ func ExampleAdvancedPathOperations() {
 	analyzer := NewPathAnalyzer()
 	query := NewPathQuery()
 
-	// Validate different path names
+	// Validate different PathHandler names
 	pathNames := []string{"valid_path", "camera/1", "stream-2", "invalid name"}
-	fmt.Println("\n🔍 Validating path names:")
+	fmt.Println("\n🔍 Validating PathHandler names:")
 	for _, name := range pathNames {
 		if err := validator.ValidatePathName(name); err != nil {
 			fmt.Printf("❌ '%s': %v\n", name, err)
@@ -201,15 +201,15 @@ func ExampleAdvancedPathOperations() {
 	// Get all paths and analyze them
 	if pathList, err := core.GetPathCRUDManager().ListPaths(0, 0); err == nil {
 		fmt.Printf("\n📊 Analyzing %d paths:\n", len(pathList.Items))
-		
+
 		// Convert PathConf slice to conf.Path slice for compatibility
 		confPaths, err := ConvertPathConfSliceToConfPaths(pathList.Items)
 		if err != nil {
-			fmt.Printf("❌ Failed to convert path configurations: %v\n", err)
+			fmt.Printf("❌ Failed to convert PathHandler configurations: %v\n", err)
 		} else {
 			for i, path := range confPaths {
 				analysis := analyzer.AnalyzePathSource(path)
-				fmt.Printf("   %s: type=%s, recording=%v\n", 
+				fmt.Printf("   %s: type=%s, recording=%v\n",
 					pathList.Items[i].Name, analysis["type"], analysis["recording_enabled"])
 			}
 
@@ -223,15 +223,15 @@ func ExampleAdvancedPathOperations() {
 		}
 	}
 
-	// Create path configurations using new factory methods
+	// Create PathHandler configurations using new factory methods
 	fmt.Println("\n🛠️ Creating paths with factory methods:")
-	
+
 	basicPath := NewSimplePathConfig("basic", "publisher", false).Build()
 	rtspPath := NewRTSPPathConfig("rtsp_test", "rtsp://example.com/stream", false).Build()
 	recordingPath := NewSimplePathConfig("recording_test", "publisher", true).Build()
-	
+
 	if basicPath.Name != "" && rtspPath.Name != "" && recordingPath.Name != "" {
-		fmt.Println("✅ All factory path configurations created successfully")
+		fmt.Println("✅ All factory PathHandler configurations created successfully")
 	}
 
 	fmt.Println("\n✅ Advanced operations example completed!")

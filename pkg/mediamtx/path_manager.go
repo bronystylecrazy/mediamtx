@@ -13,7 +13,7 @@ import (
 	"github.com/bluenviron/mediamtx/pkg/mediamtx/logger"
 	"github.com/bluenviron/mediamtx/pkg/mediamtx/metrics"
 	"github.com/bluenviron/mediamtx/pkg/mediamtx/stream"
-	
+
 	// Keep internal packages that we haven't exposed yet
 	"github.com/bluenviron/mediamtx/internal/servers/hls"
 )
@@ -62,13 +62,15 @@ type pathSetHLSServerReq struct {
 }
 
 type pathData struct {
-	path     *path
+	path     *PathHandler
 	ready    bool
 	confName string
 }
 
 type pathManagerParent interface {
 	logger.Writer
+
+	PathHook
 }
 
 type pathManager struct {
@@ -93,15 +95,47 @@ type pathManager struct {
 	// in
 	chReloadConf   chan map[string]*conf.Path
 	chSetHLSServer chan pathSetHLSServerReq
-	chClosePath    chan *path
-	chPathReady    chan *path
-	chPathNotReady chan *path
+	chClosePath    chan *PathHandler
+	chPathReady    chan *PathHandler
+	chPathNotReady chan *PathHandler
 	chFindPathConf chan defs.PathFindPathConfReq
 	chDescribe     chan defs.PathDescribeReq
 	chAddReader    chan defs.PathAddReaderReq
 	chAddPublisher chan defs.PathAddPublisherReq
 	chAPIPathsList chan pathAPIPathsListReq
 	chAPIPathsGet  chan pathAPIPathsGetReq
+}
+
+func (pm *pathManager) OnDemand(ctx context.Context, handler *PathHandler, s string) {
+	pm.parent.OnDemand(ctx, handler, s)
+}
+
+func (pm *pathManager) OnUnDemand(ctx context.Context, handler *PathHandler, s string) {
+	pm.parent.OnUnDemand(ctx, handler, s)
+}
+
+func (pm *pathManager) OnDemandStatic(ctx context.Context, handler *PathHandler, s string) {
+	pm.parent.OnDemandStatic(ctx, handler, s)
+}
+
+func (pm *pathManager) OnUnDemandStatic(ctx context.Context, handler *PathHandler, s string) {
+	pm.parent.OnUnDemandStatic(ctx, handler, s)
+}
+
+func (pm *pathManager) OnInit(ctx context.Context, handler *PathHandler) {
+	pm.parent.OnInit(ctx, handler)
+}
+
+func (pm *pathManager) OnUnInit(ctx context.Context, handler *PathHandler) {
+	pm.parent.OnUnInit(ctx, handler)
+}
+
+func (pm *pathManager) OnReady(ctx context.Context, handler *PathHandler) {
+	pm.parent.OnReady(ctx, handler)
+}
+
+func (pm *pathManager) OnNotReady(ctx context.Context, handler *PathHandler) {
+	pm.parent.OnNotReady(ctx, handler)
 }
 
 func (pm *pathManager) initialize() {
@@ -112,9 +146,9 @@ func (pm *pathManager) initialize() {
 	pm.paths = make(map[string]*pathData)
 	pm.chReloadConf = make(chan map[string]*conf.Path)
 	pm.chSetHLSServer = make(chan pathSetHLSServerReq)
-	pm.chClosePath = make(chan *path)
-	pm.chPathReady = make(chan *path)
-	pm.chPathNotReady = make(chan *path)
+	pm.chClosePath = make(chan *PathHandler)
+	pm.chPathReady = make(chan *PathHandler)
+	pm.chPathNotReady = make(chan *PathHandler)
 	pm.chFindPathConf = make(chan defs.PathFindPathConfReq)
 	pm.chDescribe = make(chan defs.PathDescribeReq)
 	pm.chAddReader = make(chan defs.PathAddReaderReq)
@@ -128,7 +162,7 @@ func (pm *pathManager) initialize() {
 		}
 	}
 
-	pm.Log(logger.Debug, "path manager created")
+	pm.Log(logger.Debug, "PathHandler manager created")
 
 	pm.wg.Add(1)
 	go pm.run()
@@ -139,7 +173,7 @@ func (pm *pathManager) initialize() {
 }
 
 func (pm *pathManager) close() {
-	pm.Log(logger.Debug, "path manager is shutting down")
+	pm.Log(logger.Debug, "PathHandler manager is shutting down")
 
 	if pm.metrics != nil {
 		pm.metrics.SetPathManager(nil)
@@ -222,15 +256,15 @@ func (pm *pathManager) doReloadConf(newPaths map[string]*conf.Path) {
 	for pathName, pathData := range pm.paths {
 		path := pathData.path
 		newPathConf, _, err := conf.FindPathConf(newPaths, pathName)
-		// path does not have a config anymore: delete it
+		// PathHandler does not have a config anymore: delete it
 		if err != nil {
 			pm.removeAndClosePath(path)
 			continue
 		}
 
-		// path now belongs to a different config
+		// PathHandler now belongs to a different config
 		if newPathConf.Name != pathData.confName {
-			// path config can be hot reloaded
+			// PathHandler config can be hot reloaded
 			oldPathConf := pm.pathConfs[pathData.confName]
 			if PathConfCanBeUpdated(oldPathConf, newPathConf) {
 				pm.paths[path.name].confName = newPathConf.Name
@@ -238,18 +272,18 @@ func (pm *pathManager) doReloadConf(newPaths map[string]*conf.Path) {
 				continue
 			}
 
-			// Configuration cannot be hot reloaded: delete the path
+			// Configuration cannot be hot reloaded: delete the PathHandler
 			pm.removeAndClosePath(path)
 			continue
 		}
 
-		// path configuration has changed and cannot be hot reloaded: delete path
+		// PathHandler configuration has changed and cannot be hot reloaded: delete PathHandler
 		if _, ok := confsToRecreate[newPathConf.Name]; ok {
 			pm.removeAndClosePath(path)
 			continue
 		}
 
-		// path configuration has changed but can be hot reloaded: reload it
+		// PathHandler configuration has changed but can be hot reloaded: reload it
 		if _, ok := confsToReload[newPathConf.Name]; ok {
 			go path.reloadConf(newPathConf)
 		}
@@ -267,7 +301,7 @@ func (pm *pathManager) doReloadConf(newPaths map[string]*conf.Path) {
 	}
 }
 
-func (pm *pathManager) removeAndClosePath(path *path) {
+func (pm *pathManager) removeAndClosePath(path *PathHandler) {
 	pm.removePath(path)
 	path.close()
 	path.wait() // avoid conflicts between sources
@@ -287,14 +321,14 @@ func (pm *pathManager) doSetHLSServer(m *hls.Server) []defs.Path {
 	return ret
 }
 
-func (pm *pathManager) doClosePath(pa *path) {
+func (pm *pathManager) doClosePath(pa *PathHandler) {
 	if pd, ok := pm.paths[pa.name]; !ok || pd.path != pa {
 		return
 	}
 	pm.removePath(pa)
 }
 
-func (pm *pathManager) doPathReady(pa *path) {
+func (pm *pathManager) doPathReady(pa *PathHandler) {
 	if pd, ok := pm.paths[pa.name]; !ok || pd.path != pa {
 		return
 	}
@@ -306,7 +340,7 @@ func (pm *pathManager) doPathReady(pa *path) {
 	}
 }
 
-func (pm *pathManager) doPathNotReady(pa *path) {
+func (pm *pathManager) doPathNotReady(pa *PathHandler) {
 	if pd, ok := pm.paths[pa.name]; !ok || pd.path != pa {
 		return
 	}
@@ -347,7 +381,7 @@ func (pm *pathManager) doDescribe(req defs.PathDescribeReq) {
 		return
 	}
 
-	// create path if it doesn't exist
+	// create PathHandler if it doesn't exist
 	if _, ok := pm.paths[req.AccessRequest.Name]; !ok {
 		pm.createPath(pathConf, req.AccessRequest.Name, pathMatches)
 	}
@@ -371,7 +405,7 @@ func (pm *pathManager) doAddReader(req defs.PathAddReaderReq) {
 		}
 	}
 
-	// create path if it doesn't exist
+	// create PathHandler if it doesn't exist
 	if _, ok := pm.paths[req.AccessRequest.Name]; !ok {
 		pm.createPath(pathConf, req.AccessRequest.Name, pathMatches)
 	}
@@ -400,7 +434,7 @@ func (pm *pathManager) doAddPublisher(req defs.PathAddPublisherReq) {
 		}
 	}
 
-	// create path if it doesn't exist
+	// create PathHandler if it doesn't exist
 	if _, ok := pm.paths[req.AccessRequest.Name]; !ok {
 		pm.createPath(pathConf, req.AccessRequest.Name, pathMatches)
 	}
@@ -410,7 +444,7 @@ func (pm *pathManager) doAddPublisher(req defs.PathAddPublisherReq) {
 }
 
 func (pm *pathManager) doAPIPathsList(req pathAPIPathsListReq) {
-	paths := make(map[string]*path)
+	paths := make(map[string]*PathHandler)
 
 	for name, pd := range pm.paths {
 		paths[name] = pd.path
@@ -434,7 +468,7 @@ func (pm *pathManager) createPath(
 	name string,
 	matches []string,
 ) {
-	pa := &path{
+	pa := &PathHandler{
 		parentCtx:         pm.ctx,
 		logLevel:          pm.logLevel,
 		rtspAddress:       pm.rtspAddress,
@@ -457,7 +491,7 @@ func (pm *pathManager) createPath(
 	}
 }
 
-func (pm *pathManager) removePath(pa *path) {
+func (pm *pathManager) removePath(pa *PathHandler) {
 	delete(pm.paths, pa.name)
 }
 
@@ -469,30 +503,30 @@ func (pm *pathManager) ReloadPathConfs(pathConfs map[string]*conf.Path) {
 	}
 }
 
-// pathReady is called by path.
-func (pm *pathManager) pathReady(pa *path) {
+// pathReady is called by PathHandler.
+func (pm *pathManager) pathReady(pa *PathHandler) {
 	select {
 	case pm.chPathReady <- pa:
 	case <-pm.ctx.Done():
-	case <-pa.ctx.Done(): // in case PathManager is blocked by path.wait()
+	case <-pa.ctx.Done(): // in case PathManager is blocked by PathHandler.wait()
 	}
 }
 
-// pathNotReady is called by path.
-func (pm *pathManager) pathNotReady(pa *path) {
+// pathNotReady is called by PathHandler.
+func (pm *pathManager) pathNotReady(pa *PathHandler) {
 	select {
 	case pm.chPathNotReady <- pa:
 	case <-pm.ctx.Done():
-	case <-pa.ctx.Done(): // in case PathManager is blocked by path.wait()
+	case <-pa.ctx.Done(): // in case PathManager is blocked by PathHandler.wait()
 	}
 }
 
-// closePath is called by path.
-func (pm *pathManager) closePath(pa *path) {
+// closePath is called by PathHandler.
+func (pm *pathManager) closePath(pa *PathHandler) {
 	select {
 	case pm.chClosePath <- pa:
 	case <-pm.ctx.Done():
-	case <-pa.ctx.Done(): // in case PathManager is blocked by path.wait()
+	case <-pa.ctx.Done(): // in case PathManager is blocked by PathHandler.wait()
 	}
 }
 
@@ -519,7 +553,7 @@ func (pm *pathManager) Describe(req defs.PathDescribeReq) defs.PathDescribeRes {
 			return res1
 		}
 
-		res2 := res1.Path.(*path).describe(req)
+		res2 := res1.Path.(*PathHandler).describe(req)
 		if res2.Err != nil {
 			return res2
 		}
@@ -542,7 +576,7 @@ func (pm *pathManager) AddPublisher(req defs.PathAddPublisherReq) (defs.Path, *s
 			return nil, nil, res.Err
 		}
 
-		return res.Path.(*path).addPublisher(req)
+		return res.Path.(*PathHandler).addPublisher(req)
 
 	case <-pm.ctx.Done():
 		return nil, nil, fmt.Errorf("terminated")
@@ -559,7 +593,7 @@ func (pm *pathManager) AddReader(req defs.PathAddReaderReq) (defs.Path, *stream.
 			return nil, nil, res.Err
 		}
 
-		return res.Path.(*path).addReader(req)
+		return res.Path.(*PathHandler).addReader(req)
 
 	case <-pm.ctx.Done():
 		return nil, nil, fmt.Errorf("terminated")

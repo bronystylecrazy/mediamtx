@@ -102,8 +102,8 @@ type MediaMTXAPIInterface interface {
 
 // MediaMTXAPI provides programmatic access to MediaMTX functionality without HTTP/gin dependencies
 type MediaMTXAPI struct {
-	core        *Core
-	mutex       sync.RWMutex
+	core  *Core
+	mutex sync.RWMutex
 }
 
 // Ensure MediaMTXAPI implements MediaMTXAPIInterface
@@ -143,10 +143,10 @@ type APIResult struct {
 	Error      error
 }
 
-// MediaMTXPathConfList represents a list of path configurations for MediaMTX API
+// MediaMTXPathConfList represents a list of PathHandler configurations for MediaMTX API
 type MediaMTXPathConfList struct {
-	ItemCount int                  `json:"itemCount"`
-	PageCount int                  `json:"pageCount"`
+	ItemCount int                      `json:"itemCount"`
+	PageCount int                      `json:"pageCount"`
 	Items     []map[string]interface{} `json:"items"`
 }
 
@@ -158,7 +158,7 @@ type MediaMTXPathConfList struct {
 func (api *MediaMTXAPI) GetGlobalConfig() (*conf.Conf, error) {
 	api.mutex.RLock()
 	defer api.mutex.RUnlock()
-	
+
 	if api.core.Conf == nil {
 		return nil, fmt.Errorf("configuration not available")
 	}
@@ -169,16 +169,16 @@ func (api *MediaMTXAPI) GetGlobalConfig() (*conf.Conf, error) {
 func (api *MediaMTXAPI) UpdateGlobalConfig(newConf *conf.Conf) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
-	
+
 	// Validate configuration
 	if err := newConf.Validate(nil); err != nil {
 		return fmt.Errorf("configuration validation failed: %v", err)
 	}
-	
+
 	// Apply configuration
 	api.core.Conf = newConf
 	api.core.APIConfigSet(newConf)
-	
+
 	return nil
 }
 
@@ -186,70 +186,70 @@ func (api *MediaMTXAPI) UpdateGlobalConfig(newConf *conf.Conf) error {
 func (api *MediaMTXAPI) PatchGlobalConfig(optionalGlobal *conf.OptionalGlobal) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
-	
+
 	newConf := api.core.Conf.Clone()
-	
+
 	// Apply the patch
 	newConf.PatchGlobal(optionalGlobal)
-	
+
 	// Validate the new configuration
 	if err := newConf.Validate(nil); err != nil {
 		return fmt.Errorf("configuration validation failed: %v", err)
 	}
-	
+
 	// Apply configuration
 	api.core.Conf = newConf
-	
+
 	// Use goroutine like the original API since config reload can cause shutdown
 	go api.core.APIConfigSet(newConf)
-	
+
 	return nil
 }
 
-// GetPathDefaults returns the default path configuration
+// GetPathDefaults returns the default PathHandler configuration
 func (api *MediaMTXAPI) GetPathDefaults() *conf.Path {
 	return &conf.Path{}
 }
 
-// UpdatePathDefaults updates the default path configuration
+// UpdatePathDefaults updates the default PathHandler configuration
 func (api *MediaMTXAPI) UpdatePathDefaults(defaults *conf.OptionalPath) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
-	
+
 	newConf := api.core.Conf.Clone()
-	
+
 	// Apply defaults to all paths or handle as needed
 	// This might need specific implementation based on requirements
-	
+
 	if err := newConf.Validate(nil); err != nil {
 		return fmt.Errorf("configuration validation failed: %v", err)
 	}
-	
+
 	api.core.Conf = newConf
 	api.core.APIConfigSet(newConf)
-	
+
 	return nil
 }
 
-// PatchPathDefaults patches the default path configuration (equivalent to PATCH /config/pathdefaults/patch)
+// PatchPathDefaults patches the default PathHandler configuration (equivalent to PATCH /config/pathdefaults/patch)
 func (api *MediaMTXAPI) PatchPathDefaults(optionalPath *conf.OptionalPath) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
-	
+
 	newConf := api.core.Conf.Clone()
-	
-	// Apply the patch to path defaults
+
+	// Apply the patch to PathHandler defaults
 	newConf.PatchPathDefaults(optionalPath)
-	
+
 	// Validate the new configuration
 	if err := newConf.Validate(nil); err != nil {
 		return fmt.Errorf("configuration validation failed: %v", err)
 	}
-	
+
 	// Apply configuration
 	api.core.Conf = newConf
 	api.core.APIConfigSet(newConf)
-	
+
 	return nil
 }
 
@@ -262,19 +262,19 @@ func (api *MediaMTXAPI) ListPathConfigs(pagination *PaginationParams) (*MediaMTX
 	api.mutex.RLock()
 	conf := api.core.Conf
 	api.mutex.RUnlock()
-	
+
 	if conf == nil {
 		return nil, fmt.Errorf("configuration not available")
 	}
-	
+
 	// Create sorted list of paths
 	sortedNames := api.sortedPathKeys(conf.Paths)
 	data := &MediaMTXPathConfList{
 		Items: []map[string]interface{}{},
 	}
-	
+
 	for _, name := range sortedNames {
-		// Convert path to map for JSON serialization
+		// Convert PathHandler to map for JSON serialization
 		pathMap := map[string]interface{}{
 			"name":                       name,
 			"source":                     conf.Paths[name].Source,
@@ -288,9 +288,9 @@ func (api *MediaMTXAPI) ListPathConfigs(pagination *PaginationParams) (*MediaMTX
 		}
 		data.Items = append(data.Items, pathMap)
 	}
-	
+
 	data.ItemCount = len(data.Items)
-	
+
 	// Apply pagination if specified
 	if pagination != nil {
 		pageCount := api.paginateSlice(&data.Items, pagination.ItemsPerPage, pagination.Page)
@@ -298,45 +298,45 @@ func (api *MediaMTXAPI) ListPathConfigs(pagination *PaginationParams) (*MediaMTX
 	} else {
 		data.PageCount = 1
 	}
-	
+
 	return data, nil
 }
 
-// GetPathConfig returns the configuration for a specific path
+// GetPathConfig returns the configuration for a specific PathHandler
 func (api *MediaMTXAPI) GetPathConfig(name string) (*conf.Path, error) {
 	api.mutex.RLock()
 	conf := api.core.Conf
 	api.mutex.RUnlock()
-	
+
 	if conf == nil {
 		return nil, fmt.Errorf("configuration not available")
 	}
-	
+
 	path, exists := conf.Paths[name]
 	if !exists {
-		return nil, fmt.Errorf("path '%s' not found", name)
+		return nil, fmt.Errorf("PathHandler '%s' not found", name)
 	}
-	
+
 	return path, nil
 }
 
-// AddPathConfig adds a new path configuration
+// AddPathConfig adds a new PathHandler configuration
 func (api *MediaMTXAPI) AddPathConfig(name string, pathConf *conf.OptionalPath) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
-	
+
 	newConf := api.core.Conf.Clone()
-	
+
 	if err := newConf.AddPath(name, pathConf); err != nil {
-		return fmt.Errorf("failed to add path: %v", err)
+		return fmt.Errorf("failed to add PathHandler: %v", err)
 	}
-	
+
 	if err := newConf.Validate(nil); err != nil {
 		return fmt.Errorf("configuration validation failed: %v", err)
 	}
-	
+
 	api.core.Conf = newConf
-	
+
 	// Try to notify Core about config change with timeout to prevent blocking
 	select {
 	case api.core.ChAPIConfigSet <- newConf:
@@ -345,27 +345,27 @@ func (api *MediaMTXAPI) AddPathConfig(name string, pathConf *conf.OptionalPath) 
 		// Core event loop not running, update config but skip notification
 		// This allows adding paths before Core.Run() is called
 	}
-	
+
 	return nil
 }
 
-// UpdatePathConfig updates an existing path configuration (partial update)
+// UpdatePathConfig updates an existing PathHandler configuration (partial update)
 func (api *MediaMTXAPI) UpdatePathConfig(name string, pathConf *conf.OptionalPath) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
-	
+
 	newConf := api.core.Conf.Clone()
-	
+
 	if err := newConf.PatchPath(name, pathConf); err != nil {
-		return fmt.Errorf("failed to update path: %v", err)
+		return fmt.Errorf("failed to update PathHandler: %v", err)
 	}
-	
+
 	if err := newConf.Validate(nil); err != nil {
 		return fmt.Errorf("configuration validation failed: %v", err)
 	}
-	
+
 	api.core.Conf = newConf
-	
+
 	// Try to notify Core about config change with timeout to prevent blocking
 	select {
 	case api.core.ChAPIConfigSet <- newConf:
@@ -374,27 +374,27 @@ func (api *MediaMTXAPI) UpdatePathConfig(name string, pathConf *conf.OptionalPat
 		// Core event loop not running, update config but skip notification
 		// This allows updating paths before Core.Run() is called
 	}
-	
+
 	return nil
 }
 
-// ReplacePathConfig replaces an entire path configuration
+// ReplacePathConfig replaces an entire PathHandler configuration
 func (api *MediaMTXAPI) ReplacePathConfig(name string, pathConf *conf.OptionalPath) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
-	
+
 	newConf := api.core.Conf.Clone()
-	
+
 	if err := newConf.ReplacePath(name, pathConf); err != nil {
-		return fmt.Errorf("failed to replace path: %v", err)
+		return fmt.Errorf("failed to replace PathHandler: %v", err)
 	}
-	
+
 	if err := newConf.Validate(nil); err != nil {
 		return fmt.Errorf("configuration validation failed: %v", err)
 	}
-	
+
 	api.core.Conf = newConf
-	
+
 	// Try to notify Core about config change with timeout to prevent blocking
 	select {
 	case api.core.ChAPIConfigSet <- newConf:
@@ -403,27 +403,27 @@ func (api *MediaMTXAPI) ReplacePathConfig(name string, pathConf *conf.OptionalPa
 		// Core event loop not running, update config but skip notification
 		// This allows replacing paths before Core.Run() is called
 	}
-	
+
 	return nil
 }
 
-// DeletePathConfig removes a path configuration
+// DeletePathConfig removes a PathHandler configuration
 func (api *MediaMTXAPI) DeletePathConfig(name string) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
-	
+
 	newConf := api.core.Conf.Clone()
-	
+
 	if err := newConf.RemovePath(name); err != nil {
-		return fmt.Errorf("failed to delete path: %v", err)
+		return fmt.Errorf("failed to delete PathHandler: %v", err)
 	}
-	
+
 	if err := newConf.Validate(nil); err != nil {
 		return fmt.Errorf("configuration validation failed: %v", err)
 	}
-	
+
 	api.core.Conf = newConf
-	
+
 	// Try to notify Core about config change with timeout to prevent blocking
 	select {
 	case api.core.ChAPIConfigSet <- newConf:
@@ -432,7 +432,7 @@ func (api *MediaMTXAPI) DeletePathConfig(name string) error {
 		// Core event loop not running, update config but skip notification
 		// This allows deleting paths before Core.Run() is called
 	}
-	
+
 	return nil
 }
 
@@ -446,9 +446,9 @@ func (api *MediaMTXAPI) ListActivePaths(pagination *PaginationParams) (*defs.API
 	if err != nil {
 		return nil, fmt.Errorf("failed to get active paths: %v", err)
 	}
-	
+
 	data.ItemCount = len(data.Items)
-	
+
 	// Apply pagination if specified
 	if pagination != nil {
 		pageCount := api.paginateSlice(&data.Items, pagination.ItemsPerPage, pagination.Page)
@@ -456,25 +456,25 @@ func (api *MediaMTXAPI) ListActivePaths(pagination *PaginationParams) (*defs.API
 	} else {
 		data.PageCount = 1
 	}
-	
+
 	return data, nil
 }
 
-// GetActivePath returns information about a specific active path
+// GetActivePath returns information about a specific active PathHandler
 func (api *MediaMTXAPI) GetActivePath(name string) (*defs.APIPath, error) {
 	data, err := api.core.PathManager.APIPathsGet(name)
 	if err != nil {
 		if errors.Is(err, conf.ErrPathNotFound) {
-			return nil, fmt.Errorf("path '%s' not found or not active", name)
+			return nil, fmt.Errorf("PathHandler '%s' not found or not active", name)
 		}
-		return nil, fmt.Errorf("failed to get path info: %v", err)
+		return nil, fmt.Errorf("failed to get PathHandler info: %v", err)
 	}
-	
+
 	return data, nil
 }
 
 // =============================================================================
-// SERVER CONNECTION MANAGEMENT  
+// SERVER CONNECTION MANAGEMENT
 // =============================================================================
 
 // GetRTSPConnections returns a list of RTSP connections with pagination
@@ -482,21 +482,21 @@ func (api *MediaMTXAPI) GetRTSPConnections(pagination *PaginationParams) (*defs.
 	if api.core.RtspServer == nil {
 		return nil, fmt.Errorf("RTSP server not available")
 	}
-	
+
 	data, err := api.core.RtspServer.APIConnsList()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get RTSP connections: %v", err)
 	}
-	
+
 	data.ItemCount = len(data.Items)
-	
+
 	if pagination != nil {
 		pageCount := api.paginateSlice(&data.Items, pagination.ItemsPerPage, pagination.Page)
 		data.PageCount = pageCount
 	} else {
 		data.PageCount = 1
 	}
-	
+
 	return data, nil
 }
 
@@ -505,17 +505,17 @@ func (api *MediaMTXAPI) GetRTSPConnection(id string) (*defs.APIRTSPConn, error) 
 	if api.core.RtspServer == nil {
 		return nil, fmt.Errorf("RTSP server not available")
 	}
-	
+
 	connUUID, err := uuid.Parse(id)
 	if err != nil {
 		return nil, fmt.Errorf("invalid connection ID: %v", err)
 	}
-	
+
 	data, err := api.core.RtspServer.APIConnsGet(connUUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get RTSP connection: %v", err)
 	}
-	
+
 	return data, nil
 }
 
@@ -524,21 +524,21 @@ func (api *MediaMTXAPI) GetRTSPSessions(pagination *PaginationParams) (*defs.API
 	if api.core.RtspServer == nil {
 		return nil, fmt.Errorf("RTSP server not available")
 	}
-	
+
 	data, err := api.core.RtspServer.APISessionsList()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get RTSP sessions: %v", err)
 	}
-	
+
 	data.ItemCount = len(data.Items)
-	
+
 	if pagination != nil {
 		pageCount := api.paginateSlice(&data.Items, pagination.ItemsPerPage, pagination.Page)
 		data.PageCount = pageCount
 	} else {
 		data.PageCount = 1
 	}
-	
+
 	return data, nil
 }
 
@@ -547,17 +547,17 @@ func (api *MediaMTXAPI) GetRTSPSession(id string) (*defs.APIRTSPSession, error) 
 	if api.core.RtspServer == nil {
 		return nil, fmt.Errorf("RTSP server not available")
 	}
-	
+
 	sessionUUID, err := uuid.Parse(id)
 	if err != nil {
 		return nil, fmt.Errorf("invalid session ID: %v", err)
 	}
-	
+
 	data, err := api.core.RtspServer.APISessionsGet(sessionUUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get RTSP session: %v", err)
 	}
-	
+
 	return data, nil
 }
 
@@ -566,17 +566,17 @@ func (api *MediaMTXAPI) KickRTSPSession(id string) error {
 	if api.core.RtspServer == nil {
 		return fmt.Errorf("RTSP server not available")
 	}
-	
+
 	sessionUUID, err := uuid.Parse(id)
 	if err != nil {
 		return fmt.Errorf("invalid session ID: %v", err)
 	}
-	
+
 	err = api.core.RtspServer.APISessionsKick(sessionUUID)
 	if err != nil {
 		return fmt.Errorf("failed to kick RTSP session: %v", err)
 	}
-	
+
 	return nil
 }
 
@@ -599,31 +599,31 @@ func (api *MediaMTXAPI) paginateSlice(itemsPtr interface{}, itemsPerPage, page i
 	if itemsPerPage <= 0 {
 		return 1
 	}
-	
+
 	ritems := reflect.ValueOf(itemsPtr).Elem()
 	itemsLen := ritems.Len()
-	
+
 	if itemsLen == 0 {
 		return 0
 	}
-	
+
 	pageCount := (itemsLen / itemsPerPage)
 	if (itemsLen % itemsPerPage) != 0 {
 		pageCount++
 	}
-	
+
 	minVal := page * itemsPerPage
 	if minVal > itemsLen {
 		minVal = itemsLen
 	}
-	
+
 	maxVal := (page + 1) * itemsPerPage
 	if maxVal > itemsLen {
 		maxVal = itemsLen
 	}
-	
+
 	ritems.Set(ritems.Slice(minVal, maxVal))
-	
+
 	return pageCount
 }
 
@@ -631,7 +631,7 @@ func (api *MediaMTXAPI) paginateSlice(itemsPtr interface{}, itemsPerPage, page i
 // CONVENIENCE METHODS
 // =============================================================================
 
-// PathOptions represents comprehensive path configuration options based on OpenAPI PathConf schema
+// PathOptions represents comprehensive PathHandler configuration options based on OpenAPI PathConf schema
 type PathOptions struct {
 	Name string `json:"name,omitempty"`
 
@@ -660,79 +660,79 @@ type PathOptions struct {
 	SRTPublishPassphrase string `json:"srtPublishPassphrase,omitempty"`
 
 	// RTSP source
-	RTSPTransport           string `json:"rtspTransport,omitempty"`
-	RTSPAnyPort             bool   `json:"rtspAnyPort,omitempty"`
-	RTSPRangeType           string `json:"rtspRangeType,omitempty"`
-	RTSPRangeStart          string `json:"rtspRangeStart,omitempty"`
-	RTSPUDPReadBufferSize   int    `json:"rtspUDPReadBufferSize,omitempty"`
+	RTSPTransport         string `json:"rtspTransport,omitempty"`
+	RTSPAnyPort           bool   `json:"rtspAnyPort,omitempty"`
+	RTSPRangeType         string `json:"rtspRangeType,omitempty"`
+	RTSPRangeStart        string `json:"rtspRangeStart,omitempty"`
+	RTSPUDPReadBufferSize int    `json:"rtspUDPReadBufferSize,omitempty"`
 
 	// MPEG-TS source
 	MPEGTSUDPReadBufferSize int `json:"mpegtsUDPReadBufferSize,omitempty"`
 
 	// RTP source
-	RTPSDP                string `json:"rtpSDP,omitempty"`
-	RTPUDPReadBufferSize  int    `json:"rtpUDPReadBufferSize,omitempty"`
+	RTPSDP               string `json:"rtpSDP,omitempty"`
+	RTPUDPReadBufferSize int    `json:"rtpUDPReadBufferSize,omitempty"`
 
 	// Redirect source
 	SourceRedirect string `json:"sourceRedirect,omitempty"`
 
 	// Raspberry Pi Camera source
-	RPICameraCamID                 int       `json:"rpiCameraCamID,omitempty"`
-	RPICameraSecondary             bool      `json:"rpiCameraSecondary,omitempty"`
-	RPICameraWidth                 int       `json:"rpiCameraWidth,omitempty"`
-	RPICameraHeight                int       `json:"rpiCameraHeight,omitempty"`
-	RPICameraHFlip                 bool      `json:"rpiCameraHFlip,omitempty"`
-	RPICameraVFlip                 bool      `json:"rpiCameraVFlip,omitempty"`
-	RPICameraBrightness            float64   `json:"rpiCameraBrightness,omitempty"`
-	RPICameraContrast              float64   `json:"rpiCameraContrast,omitempty"`
-	RPICameraSaturation            float64   `json:"rpiCameraSaturation,omitempty"`
-	RPICameraSharpness             float64   `json:"rpiCameraSharpness,omitempty"`
-	RPICameraExposure              string    `json:"rpiCameraExposure,omitempty"`
-	RPICameraAWB                   string    `json:"rpiCameraAWB,omitempty"`
-	RPICameraAWBGains              []float64 `json:"rpiCameraAWBGains,omitempty"`
-	RPICameraDenoise               string    `json:"rpiCameraDenoise,omitempty"`
-	RPICameraShutter               int       `json:"rpiCameraShutter,omitempty"`
-	RPICameraMetering              string    `json:"rpiCameraMetering,omitempty"`
-	RPICameraGain                  float64   `json:"rpiCameraGain,omitempty"`
-	RPICameraEV                    float64   `json:"rpiCameraEV,omitempty"`
-	RPICameraROI                   string    `json:"rpiCameraROI,omitempty"`
-	RPICameraHDR                   bool      `json:"rpiCameraHDR,omitempty"`
-	RPICameraTuningFile            string    `json:"rpiCameraTuningFile,omitempty"`
-	RPICameraMode                  string    `json:"rpiCameraMode,omitempty"`
-	RPICameraFPS                   float64   `json:"rpiCameraFPS,omitempty"`
-	RPICameraAfMode                string    `json:"rpiCameraAfMode,omitempty"`
-	RPICameraAfRange               string    `json:"rpiCameraAfRange,omitempty"`
-	RPICameraAfSpeed               string    `json:"rpiCameraAfSpeed,omitempty"`
-	RPICameraLensPosition          float64   `json:"rpiCameraLensPosition,omitempty"`
-	RPICameraAfWindow              string    `json:"rpiCameraAfWindow,omitempty"`
-	RPICameraFlickerPeriod         int       `json:"rpiCameraFlickerPeriod,omitempty"`
-	RPICameraTextOverlayEnable     bool      `json:"rpiCameraTextOverlayEnable,omitempty"`
-	RPICameraTextOverlay           string    `json:"rpiCameraTextOverlay,omitempty"`
-	RPICameraCodec                 string    `json:"rpiCameraCodec,omitempty"`
-	RPICameraIDRPeriod             int       `json:"rpiCameraIDRPeriod,omitempty"`
-	RPICameraBitrate               int       `json:"rpiCameraBitrate,omitempty"`
-	RPICameraHardwareH264Profile   string    `json:"rpiCameraHardwareH264Profile,omitempty"`
-	RPICameraHardwareH264Level     string    `json:"rpiCameraHardwareH264Level,omitempty"`
-	RPICameraSoftwareH264Profile   string    `json:"rpiCameraSoftwareH264Profile,omitempty"`
-	RPICameraSoftwareH264Level     string    `json:"rpiCameraSoftwareH264Level,omitempty"`
-	RPICameraMJPEGQuality          int       `json:"rpiCameraMJPEGQuality,omitempty"`
+	RPICameraCamID               int       `json:"rpiCameraCamID,omitempty"`
+	RPICameraSecondary           bool      `json:"rpiCameraSecondary,omitempty"`
+	RPICameraWidth               int       `json:"rpiCameraWidth,omitempty"`
+	RPICameraHeight              int       `json:"rpiCameraHeight,omitempty"`
+	RPICameraHFlip               bool      `json:"rpiCameraHFlip,omitempty"`
+	RPICameraVFlip               bool      `json:"rpiCameraVFlip,omitempty"`
+	RPICameraBrightness          float64   `json:"rpiCameraBrightness,omitempty"`
+	RPICameraContrast            float64   `json:"rpiCameraContrast,omitempty"`
+	RPICameraSaturation          float64   `json:"rpiCameraSaturation,omitempty"`
+	RPICameraSharpness           float64   `json:"rpiCameraSharpness,omitempty"`
+	RPICameraExposure            string    `json:"rpiCameraExposure,omitempty"`
+	RPICameraAWB                 string    `json:"rpiCameraAWB,omitempty"`
+	RPICameraAWBGains            []float64 `json:"rpiCameraAWBGains,omitempty"`
+	RPICameraDenoise             string    `json:"rpiCameraDenoise,omitempty"`
+	RPICameraShutter             int       `json:"rpiCameraShutter,omitempty"`
+	RPICameraMetering            string    `json:"rpiCameraMetering,omitempty"`
+	RPICameraGain                float64   `json:"rpiCameraGain,omitempty"`
+	RPICameraEV                  float64   `json:"rpiCameraEV,omitempty"`
+	RPICameraROI                 string    `json:"rpiCameraROI,omitempty"`
+	RPICameraHDR                 bool      `json:"rpiCameraHDR,omitempty"`
+	RPICameraTuningFile          string    `json:"rpiCameraTuningFile,omitempty"`
+	RPICameraMode                string    `json:"rpiCameraMode,omitempty"`
+	RPICameraFPS                 float64   `json:"rpiCameraFPS,omitempty"`
+	RPICameraAfMode              string    `json:"rpiCameraAfMode,omitempty"`
+	RPICameraAfRange             string    `json:"rpiCameraAfRange,omitempty"`
+	RPICameraAfSpeed             string    `json:"rpiCameraAfSpeed,omitempty"`
+	RPICameraLensPosition        float64   `json:"rpiCameraLensPosition,omitempty"`
+	RPICameraAfWindow            string    `json:"rpiCameraAfWindow,omitempty"`
+	RPICameraFlickerPeriod       int       `json:"rpiCameraFlickerPeriod,omitempty"`
+	RPICameraTextOverlayEnable   bool      `json:"rpiCameraTextOverlayEnable,omitempty"`
+	RPICameraTextOverlay         string    `json:"rpiCameraTextOverlay,omitempty"`
+	RPICameraCodec               string    `json:"rpiCameraCodec,omitempty"`
+	RPICameraIDRPeriod           int       `json:"rpiCameraIDRPeriod,omitempty"`
+	RPICameraBitrate             int       `json:"rpiCameraBitrate,omitempty"`
+	RPICameraHardwareH264Profile string    `json:"rpiCameraHardwareH264Profile,omitempty"`
+	RPICameraHardwareH264Level   string    `json:"rpiCameraHardwareH264Level,omitempty"`
+	RPICameraSoftwareH264Profile string    `json:"rpiCameraSoftwareH264Profile,omitempty"`
+	RPICameraSoftwareH264Level   string    `json:"rpiCameraSoftwareH264Level,omitempty"`
+	RPICameraMJPEGQuality        int       `json:"rpiCameraMJPEGQuality,omitempty"`
 
 	// Hooks
-	RunOnInit                    string `json:"runOnInit,omitempty"`
-	RunOnInitRestart             bool   `json:"runOnInitRestart,omitempty"`
-	RunOnDemand                  string `json:"runOnDemand,omitempty"`
-	RunOnDemandRestart           bool   `json:"runOnDemandRestart,omitempty"`
-	RunOnDemandStartTimeout      string `json:"runOnDemandStartTimeout,omitempty"`
-	RunOnDemandCloseAfter        string `json:"runOnDemandCloseAfter,omitempty"`
-	RunOnUnDemand                string `json:"runOnUnDemand,omitempty"`
-	RunOnReady                   string `json:"runOnReady,omitempty"`
-	RunOnReadyRestart            bool   `json:"runOnReadyRestart,omitempty"`
-	RunOnNotReady                string `json:"runOnNotReady,omitempty"`
-	RunOnRead                    string `json:"runOnRead,omitempty"`
-	RunOnReadRestart             bool   `json:"runOnReadRestart,omitempty"`
-	RunOnUnread                  string `json:"runOnUnread,omitempty"`
-	RunOnRecordSegmentCreate     string `json:"runOnRecordSegmentCreate,omitempty"`
-	RunOnRecordSegmentComplete   string `json:"runOnRecordSegmentComplete,omitempty"`
+	RunOnInit                  string `json:"runOnInit,omitempty"`
+	RunOnInitRestart           bool   `json:"runOnInitRestart,omitempty"`
+	RunOnDemand                string `json:"runOnDemand,omitempty"`
+	RunOnDemandRestart         bool   `json:"runOnDemandRestart,omitempty"`
+	RunOnDemandStartTimeout    string `json:"runOnDemandStartTimeout,omitempty"`
+	RunOnDemandCloseAfter      string `json:"runOnDemandCloseAfter,omitempty"`
+	RunOnUnDemand              string `json:"runOnUnDemand,omitempty"`
+	RunOnReady                 string `json:"runOnReady,omitempty"`
+	RunOnReadyRestart          bool   `json:"runOnReadyRestart,omitempty"`
+	RunOnNotReady              string `json:"runOnNotReady,omitempty"`
+	RunOnRead                  string `json:"runOnRead,omitempty"`
+	RunOnReadRestart           bool   `json:"runOnReadRestart,omitempty"`
+	RunOnUnread                string `json:"runOnUnread,omitempty"`
+	RunOnRecordSegmentCreate   string `json:"runOnRecordSegmentCreate,omitempty"`
+	RunOnRecordSegmentComplete string `json:"runOnRecordSegmentComplete,omitempty"`
 }
 
 // NewOptionalPath creates a new OptionalPath with the given source
@@ -741,7 +741,7 @@ func NewOptionalPath(source string) *conf.OptionalPath {
 }
 
 // NewOptionalPublisherPath creates a new OptionalPath configured to accept incoming streams
-// This is useful when you want to create a path that accepts streams pushed to it
+// This is useful when you want to create a PathHandler that accepts streams pushed to it
 // rather than pulling from an external source
 func NewOptionalPublisherPath(name string) *conf.OptionalPath {
 	return NewOptionalPathWithOptions(PathOptions{
@@ -753,11 +753,11 @@ func NewOptionalPublisherPath(name string) *conf.OptionalPath {
 // NewOptionalPathWithOptions creates a new OptionalPath with typed options
 func NewOptionalPathWithOptions(options PathOptions) *conf.OptionalPath {
 	optPath := &conf.OptionalPath{}
-	
+
 	// Convert PathOptions to JSON
 	optionsJSON, err := json.Marshal(options)
 	if err != nil {
-		// Fallback to basic publisher path if marshaling fails
+		// Fallback to basic publisher PathHandler if marshaling fails
 		fallbackJSON := []byte(`{"source":"publisher"}`)
 		if options.Source != "" {
 			fallbackJSON, _ = json.Marshal(map[string]string{"source": options.Source})
@@ -765,13 +765,13 @@ func NewOptionalPathWithOptions(options PathOptions) *conf.OptionalPath {
 		_ = json.Unmarshal(fallbackJSON, optPath)
 		return optPath
 	}
-	
+
 	// Use OptionalPath's own UnmarshalJSON method which:
 	// 1. Creates the proper dynamic struct with pointer fields
 	// 2. Uses jsonwrapper.Unmarshal for proper validation
 	// 3. Triggers setDefaults() through the MediaMTX configuration system
 	if err := json.Unmarshal(optionsJSON, optPath); err != nil {
-		// Fallback to basic publisher path if unmarshaling fails
+		// Fallback to basic publisher PathHandler if unmarshaling fails
 		fallbackJSON := []byte(`{"source":"publisher"}`)
 		if options.Source != "" {
 			fallbackJSON, _ = json.Marshal(map[string]string{"source": options.Source})
@@ -779,14 +779,14 @@ func NewOptionalPathWithOptions(options PathOptions) *conf.OptionalPath {
 		_ = json.Unmarshal(fallbackJSON, optPath)
 		return optPath
 	}
-	
+
 	return optPath
 }
 
 // PaginateFromStrings converts string pagination parameters
 func PaginateFromStrings(itemsPerPageStr, pageStr string) (*PaginationParams, error) {
 	pagination := DefaultPagination()
-	
+
 	if itemsPerPageStr != "" {
 		tmp, err := strconv.ParseUint(itemsPerPageStr, 10, 31)
 		if err != nil {
@@ -797,7 +797,7 @@ func PaginateFromStrings(itemsPerPageStr, pageStr string) (*PaginationParams, er
 		}
 		pagination.ItemsPerPage = int(tmp)
 	}
-	
+
 	if pageStr != "" {
 		tmp, err := strconv.ParseUint(pageStr, 10, 31)
 		if err != nil {
@@ -805,7 +805,7 @@ func PaginateFromStrings(itemsPerPageStr, pageStr string) (*PaginationParams, er
 		}
 		pagination.Page = int(tmp)
 	}
-	
+
 	return pagination, nil
 }
 
@@ -818,7 +818,7 @@ func (api *MediaMTXAPI) Authenticate(req *auth.Request) *auth.Error {
 	if api.core.AuthManager == nil {
 		return nil
 	}
-	
+
 	return api.core.AuthManager.Authenticate(req)
 }
 
@@ -827,7 +827,7 @@ func (api *MediaMTXAPI) RefreshJWTJWKS() {
 	if api.core.AuthManager == nil {
 		return
 	}
-	
+
 	api.core.AuthManager.RefreshJWTJWKS()
 }
 
@@ -837,10 +837,10 @@ func (api *MediaMTXAPI) CreateAuthRequest(user, pass, query, ip string) (*auth.R
 	if parsedIP == nil {
 		return nil, fmt.Errorf("invalid IP address: %s", ip)
 	}
-	
+
 	return &auth.Request{
-		Action:      conf.AuthActionAPI,
-		Query:       query,
+		Action: conf.AuthActionAPI,
+		Query:  query,
 		Credentials: &auth.Credentials{
 			User: user,
 			Pass: pass,
@@ -855,10 +855,10 @@ func (api *MediaMTXAPI) ValidateAPIAccess(user, pass, ip string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create auth request: %v", err)
 	}
-	
+
 	if authErr := api.Authenticate(req); authErr != nil {
 		return fmt.Errorf("authentication failed: %v", authErr)
 	}
-	
+
 	return nil
 }

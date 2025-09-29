@@ -31,10 +31,12 @@ func emptyTimer() *time.Timer {
 
 type pathParent interface {
 	logger.Writer
-	pathReady(*path)
-	pathNotReady(*path)
-	closePath(*path)
+	pathReady(*PathHandler)
+	pathNotReady(*PathHandler)
+	closePath(*PathHandler)
 	AddReader(req defs.PathAddReaderReq) (defs.Path, *stream.Stream, error)
+
+	PathHook
 }
 
 type pathOnDemandState int
@@ -48,7 +50,7 @@ const (
 
 type pathAPIPathsListRes struct {
 	data  *defs.APIPathList
-	paths map[string]*path
+	paths map[string]*PathHandler
 }
 
 type pathAPIPathsListReq struct {
@@ -56,7 +58,7 @@ type pathAPIPathsListReq struct {
 }
 
 type pathAPIPathsGetRes struct {
-	path *path
+	path *PathHandler
 	data *defs.APIPath
 	err  error
 }
@@ -66,7 +68,7 @@ type pathAPIPathsGetReq struct {
 	res  chan pathAPIPathsGetRes
 }
 
-type path struct {
+type PathHandler struct {
 	parentCtx         context.Context
 	logLevel          conf.LogLevel
 	rtspAddress       string
@@ -116,7 +118,7 @@ type path struct {
 	done chan struct{}
 }
 
-func (pa *path) initialize() {
+func (pa *PathHandler) initialize() {
 	ctx, ctxCancel := context.WithCancel(pa.parentCtx)
 
 	pa.ctx = ctx
@@ -143,28 +145,28 @@ func (pa *path) initialize() {
 	go pa.run()
 }
 
-func (pa *path) close() {
+func (pa *PathHandler) close() {
 	pa.ctxCancel()
 }
 
-func (pa *path) wait() {
+func (pa *PathHandler) wait() {
 	<-pa.done
 }
 
 // Log implements logger.Writer.
-func (pa *path) Log(level logger.Level, format string, args ...interface{}) {
-	pa.parent.Log(level, "[path "+pa.name+"] "+format, args...)
+func (pa *PathHandler) Log(level logger.Level, format string, args ...interface{}) {
+	pa.parent.Log(level, "[PathHandler "+pa.name+"] "+format, args...)
 }
 
-func (pa *path) Name() string {
+func (pa *PathHandler) Name() string {
 	return pa.name
 }
 
-func (pa *path) isReady() bool {
+func (pa *PathHandler) isReady() bool {
 	return pa.stream != nil
 }
 
-func (pa *path) run() {
+func (pa *PathHandler) run() {
 	defer close(pa.done)
 	defer pa.wg.Done()
 
@@ -196,6 +198,8 @@ func (pa *path) run() {
 		ExternalCmdEnv:  pa.ExternalCmdEnv(),
 	})
 
+	pa.parent.OnInit(pa.ctx, pa)
+
 	err := pa.runInner()
 
 	// call before destroying context
@@ -209,6 +213,7 @@ func (pa *path) run() {
 	pa.onDemandPublisherCloseTimer.Stop()
 
 	onUnInitHook()
+	pa.parent.OnUnInit(pa.ctx, pa)
 
 	for _, req := range pa.describeRequestsOnHold {
 		req.Res <- defs.PathDescribeRes{Err: fmt.Errorf("terminated")}
@@ -225,7 +230,7 @@ func (pa *path) run() {
 	if pa.source != nil {
 		if source, ok := pa.source.(*staticsources.Handler); ok {
 			if !pa.conf.SourceOnDemand || pa.onDemandStaticSourceState != pathOnDemandStateInitial {
-				source.Close("path is closing")
+				source.Close("PathHandler is closing")
 			}
 		} else if source, ok2 := pa.source.(defs.Publisher); ok2 {
 			source.Close()
@@ -233,13 +238,13 @@ func (pa *path) run() {
 	}
 
 	if pa.onUnDemandHook != nil {
-		pa.onUnDemandHook("path destroyed")
+		pa.onUnDemandHook("PathHandler destroyed")
 	}
 
 	pa.Log(logger.Debug, "destroyed: %v", err)
 }
 
-func (pa *path) runInner() error {
+func (pa *PathHandler) runInner() error {
 	for {
 		select {
 		case <-pa.onDemandStaticSourceReadyTimer.C:
@@ -315,44 +320,44 @@ func (pa *path) runInner() error {
 	}
 }
 
-func (pa *path) doOnDemandStaticSourceReadyTimer() {
+func (pa *PathHandler) doOnDemandStaticSourceReadyTimer() {
 	for _, req := range pa.describeRequestsOnHold {
-		req.Res <- defs.PathDescribeRes{Err: fmt.Errorf("source of path '%s' has timed out", pa.name)}
+		req.Res <- defs.PathDescribeRes{Err: fmt.Errorf("source of PathHandler '%s' has timed out", pa.name)}
 	}
 	pa.describeRequestsOnHold = nil
 
 	for _, req := range pa.readerAddRequestsOnHold {
-		req.Res <- defs.PathAddReaderRes{Err: fmt.Errorf("source of path '%s' has timed out", pa.name)}
+		req.Res <- defs.PathAddReaderRes{Err: fmt.Errorf("source of PathHandler '%s' has timed out", pa.name)}
 	}
 	pa.readerAddRequestsOnHold = nil
 
 	pa.onDemandStaticSourceStop("timed out")
 }
 
-func (pa *path) doOnDemandStaticSourceCloseTimer() {
+func (pa *PathHandler) doOnDemandStaticSourceCloseTimer() {
 	pa.setNotReady()
 	pa.onDemandStaticSourceStop("not needed by anyone")
 }
 
-func (pa *path) doOnDemandPublisherReadyTimer() {
+func (pa *PathHandler) doOnDemandPublisherReadyTimer() {
 	for _, req := range pa.describeRequestsOnHold {
-		req.Res <- defs.PathDescribeRes{Err: fmt.Errorf("source of path '%s' has timed out", pa.name)}
+		req.Res <- defs.PathDescribeRes{Err: fmt.Errorf("source of PathHandler '%s' has timed out", pa.name)}
 	}
 	pa.describeRequestsOnHold = nil
 
 	for _, req := range pa.readerAddRequestsOnHold {
-		req.Res <- defs.PathAddReaderRes{Err: fmt.Errorf("source of path '%s' has timed out", pa.name)}
+		req.Res <- defs.PathAddReaderRes{Err: fmt.Errorf("source of PathHandler '%s' has timed out", pa.name)}
 	}
 	pa.readerAddRequestsOnHold = nil
 
 	pa.onDemandPublisherStop("timed out")
 }
 
-func (pa *path) doOnDemandPublisherCloseTimer() {
+func (pa *PathHandler) doOnDemandPublisherCloseTimer() {
 	pa.onDemandPublisherStop("not needed by anyone")
 }
 
-func (pa *path) doReloadConf(newConf *conf.Path) {
+func (pa *PathHandler) doReloadConf(newConf *conf.Path) {
 	pa.confMutex.Lock()
 	oldConf := pa.conf
 	pa.conf = newConf
@@ -379,7 +384,7 @@ func (pa *path) doReloadConf(newConf *conf.Path) {
 	}
 }
 
-func (pa *path) doSourceStaticSetReady(req defs.PathSourceStaticSetReadyReq) {
+func (pa *PathHandler) doSourceStaticSetReady(req defs.PathSourceStaticSetReadyReq) {
 	err := pa.setReady(req.Desc, req.GenerateRTPPackets)
 	if err != nil {
 		req.Res <- defs.PathSourceStaticSetReadyRes{Err: err}
@@ -397,7 +402,7 @@ func (pa *path) doSourceStaticSetReady(req defs.PathSourceStaticSetReadyReq) {
 	req.Res <- defs.PathSourceStaticSetReadyRes{Stream: pa.stream}
 }
 
-func (pa *path) doSourceStaticSetNotReady(req defs.PathSourceStaticSetNotReadyReq) {
+func (pa *PathHandler) doSourceStaticSetNotReady(req defs.PathSourceStaticSetNotReadyReq) {
 	pa.setNotReady()
 
 	// send response before calling onDemandStaticSourceStop()
@@ -409,7 +414,7 @@ func (pa *path) doSourceStaticSetNotReady(req defs.PathSourceStaticSetNotReadyRe
 	}
 }
 
-func (pa *path) doDescribe(req defs.PathDescribeReq) {
+func (pa *PathHandler) doDescribe(req defs.PathDescribeReq) {
 	if _, ok := pa.source.(*sourceRedirect); ok {
 		req.Res <- defs.PathDescribeRes{
 			Redirect: pa.conf.SourceRedirect,
@@ -448,24 +453,24 @@ func (pa *path) doDescribe(req defs.PathDescribeReq) {
 	req.Res <- defs.PathDescribeRes{Err: defs.PathNoStreamAvailableError{PathName: pa.name}}
 }
 
-func (pa *path) doRemovePublisher(req defs.PathRemovePublisherReq) {
+func (pa *PathHandler) doRemovePublisher(req defs.PathRemovePublisherReq) {
 	if pa.source == req.Author {
 		pa.executeRemovePublisher()
 	}
 	close(req.Res)
 }
 
-func (pa *path) doAddPublisher(req defs.PathAddPublisherReq) {
+func (pa *PathHandler) doAddPublisher(req defs.PathAddPublisherReq) {
 	if pa.conf.Source != "publisher" {
 		req.Res <- defs.PathAddPublisherRes{
-			Err: fmt.Errorf("can't publish to path '%s' since 'source' is not 'publisher'", pa.name),
+			Err: fmt.Errorf("can't publish to PathHandler '%s' since 'source' is not 'publisher'", pa.name),
 		}
 		return
 	}
 
 	if pa.source != nil {
 		if !pa.conf.OverridePublisher {
-			req.Res <- defs.PathAddPublisherRes{Err: fmt.Errorf("someone is already publishing to path '%s'", pa.name)}
+			req.Res <- defs.PathAddPublisherRes{Err: fmt.Errorf("someone is already publishing to PathHandler '%s'", pa.name)}
 			return
 		}
 
@@ -484,7 +489,7 @@ func (pa *path) doAddPublisher(req defs.PathAddPublisherReq) {
 		return
 	}
 
-	req.Author.Log(logger.Info, "is publishing to path '%s', %s",
+	req.Author.Log(logger.Info, "is publishing to PathHandler '%s', %s",
 		pa.name,
 		defs.MediasInfo(req.Desc.Medias))
 
@@ -502,7 +507,7 @@ func (pa *path) doAddPublisher(req defs.PathAddPublisherReq) {
 	}
 }
 
-func (pa *path) doAddReader(req defs.PathAddReaderReq) {
+func (pa *PathHandler) doAddReader(req defs.PathAddReaderReq) {
 	if pa.stream != nil {
 		pa.addReaderPost(req)
 		return
@@ -527,7 +532,7 @@ func (pa *path) doAddReader(req defs.PathAddReaderReq) {
 	req.Res <- defs.PathAddReaderRes{Err: defs.PathNoStreamAvailableError{PathName: pa.name}}
 }
 
-func (pa *path) doRemoveReader(req defs.PathRemoveReaderReq) {
+func (pa *PathHandler) doRemoveReader(req defs.PathRemoveReaderReq) {
 	if _, ok := pa.readers[req.Author]; ok {
 		pa.executeRemoveReader(req.Author)
 	}
@@ -546,7 +551,7 @@ func (pa *path) doRemoveReader(req defs.PathRemoveReaderReq) {
 	}
 }
 
-func (pa *path) doAPIPathsGet(req pathAPIPathsGetReq) {
+func (pa *PathHandler) doAPIPathsGet(req pathAPIPathsGetReq) {
 	req.res <- pathAPIPathsGetRes{
 		data: &defs.APIPath{
 			Name:     pa.name,
@@ -595,13 +600,13 @@ func (pa *path) doAPIPathsGet(req pathAPIPathsGetReq) {
 	}
 }
 
-func (pa *path) SafeConf() *conf.Path {
+func (pa *PathHandler) SafeConf() *conf.Path {
 	pa.confMutex.RLock()
 	defer pa.confMutex.RUnlock()
 	return pa.conf
 }
 
-func (pa *path) ExternalCmdEnv() externalcmd.Environment {
+func (pa *PathHandler) ExternalCmdEnv() externalcmd.Environment {
 	_, port, _ := net.SplitHostPort(pa.rtspAddress)
 	env := externalcmd.Environment{
 		"MTX_PATH":  pa.name,
@@ -618,7 +623,7 @@ func (pa *path) ExternalCmdEnv() externalcmd.Environment {
 	return utils.BuildCmdEnv(env)
 }
 
-func (pa *path) shouldClose() bool {
+func (pa *PathHandler) shouldClose() bool {
 	return pa.conf.Regexp != nil &&
 		pa.source == nil &&
 		len(pa.readers) == 0 &&
@@ -626,23 +631,24 @@ func (pa *path) shouldClose() bool {
 		len(pa.readerAddRequestsOnHold) == 0
 }
 
-func (pa *path) onDemandStaticSourceStart(query string) {
+func (pa *PathHandler) onDemandStaticSourceStart(query string) {
 	pa.source.(*staticsources.Handler).Start(true, query)
 
 	pa.onDemandStaticSourceReadyTimer.Stop()
 	pa.onDemandStaticSourceReadyTimer = time.NewTimer(time.Duration(pa.conf.SourceOnDemandStartTimeout))
 
 	pa.onDemandStaticSourceState = pathOnDemandStateWaitingReady
+	pa.parent.OnDemandStatic(pa.ctx, pa, query)
 }
 
-func (pa *path) onDemandStaticSourceScheduleClose() {
+func (pa *PathHandler) onDemandStaticSourceScheduleClose() {
 	pa.onDemandStaticSourceCloseTimer.Stop()
 	pa.onDemandStaticSourceCloseTimer = time.NewTimer(time.Duration(pa.conf.SourceOnDemandCloseAfter))
 
 	pa.onDemandStaticSourceState = pathOnDemandStateClosing
 }
 
-func (pa *path) onDemandStaticSourceStop(reason string) {
+func (pa *PathHandler) onDemandStaticSourceStop(reason string) {
 	if pa.onDemandStaticSourceState == pathOnDemandStateClosing {
 		pa.onDemandStaticSourceCloseTimer.Stop()
 		pa.onDemandStaticSourceCloseTimer = emptyTimer()
@@ -651,9 +657,10 @@ func (pa *path) onDemandStaticSourceStop(reason string) {
 	pa.onDemandStaticSourceState = pathOnDemandStateInitial
 
 	pa.source.(*staticsources.Handler).Stop(reason)
+	pa.parent.OnUnDemandStatic(pa.ctx, pa, reason)
 }
 
-func (pa *path) onDemandPublisherStart(query string) {
+func (pa *PathHandler) onDemandPublisherStart(query string) {
 	pa.onUnDemandHook = hooks.OnDemand(hooks.OnDemandParams{
 		Logger:          pa,
 		ExternalCmdPool: pa.externalCmdPool,
@@ -666,16 +673,17 @@ func (pa *path) onDemandPublisherStart(query string) {
 	pa.onDemandPublisherReadyTimer = time.NewTimer(time.Duration(pa.conf.RunOnDemandStartTimeout))
 
 	pa.onDemandPublisherState = pathOnDemandStateWaitingReady
+	pa.parent.OnDemand(pa.ctx, pa, query)
 }
 
-func (pa *path) onDemandPublisherScheduleClose() {
+func (pa *PathHandler) onDemandPublisherScheduleClose() {
 	pa.onDemandPublisherCloseTimer.Stop()
 	pa.onDemandPublisherCloseTimer = time.NewTimer(time.Duration(pa.conf.RunOnDemandCloseAfter))
 
 	pa.onDemandPublisherState = pathOnDemandStateClosing
 }
 
-func (pa *path) onDemandPublisherStop(reason string) {
+func (pa *PathHandler) onDemandPublisherStop(reason string) {
 	if pa.onDemandPublisherState == pathOnDemandStateClosing {
 		pa.onDemandPublisherCloseTimer.Stop()
 		pa.onDemandPublisherCloseTimer = emptyTimer()
@@ -685,9 +693,10 @@ func (pa *path) onDemandPublisherStop(reason string) {
 	pa.onUnDemandHook = nil
 
 	pa.onDemandPublisherState = pathOnDemandStateInitial
+	pa.parent.OnUnDemand(pa.ctx, pa, reason)
 }
 
-func (pa *path) setReady(desc *description.Session, allocateEncoder bool) error {
+func (pa *PathHandler) setReady(desc *description.Session, allocateEncoder bool) error {
 	pa.stream = &stream.Stream{
 		WriteQueueSize:     pa.writeQueueSize,
 		RTPMaxPayloadSize:  pa.rtpMaxPayloadSize,
@@ -716,11 +725,12 @@ func (pa *path) setReady(desc *description.Session, allocateEncoder bool) error 
 	})
 
 	pa.parent.pathReady(pa)
+	pa.parent.OnReady(pa.ctx, pa)
 
 	return nil
 }
 
-func (pa *path) consumeOnHoldRequests() {
+func (pa *PathHandler) consumeOnHoldRequests() {
 	for _, req := range pa.describeRequestsOnHold {
 		req.Res <- defs.PathDescribeRes{
 			Stream: pa.stream,
@@ -734,7 +744,7 @@ func (pa *path) consumeOnHoldRequests() {
 	pa.readerAddRequestsOnHold = nil
 }
 
-func (pa *path) setNotReady() {
+func (pa *PathHandler) setNotReady() {
 	pa.parent.pathNotReady(pa)
 
 	for r := range pa.readers {
@@ -753,9 +763,11 @@ func (pa *path) setNotReady() {
 		pa.stream.Close()
 		pa.stream = nil
 	}
+
+	pa.parent.OnNotReady(pa.ctx, pa)
 }
 
-func (pa *path) startRecording() {
+func (pa *PathHandler) startRecording() {
 	pa.recorder = &recorder.Recorder{
 		PathFormat:      pa.conf.RecordPath,
 		Format:          pa.conf.RecordFormat,
@@ -798,11 +810,11 @@ func (pa *path) startRecording() {
 	pa.recorder.Initialize()
 }
 
-func (pa *path) executeRemoveReader(r defs.Reader) {
+func (pa *PathHandler) executeRemoveReader(r defs.Reader) {
 	delete(pa.readers, r)
 }
 
-func (pa *path) executeRemovePublisher() {
+func (pa *PathHandler) executeRemovePublisher() {
 	if pa.stream != nil {
 		pa.setNotReady()
 	}
@@ -810,7 +822,7 @@ func (pa *path) executeRemovePublisher() {
 	pa.source = nil
 }
 
-func (pa *path) addReaderPost(req defs.PathAddReaderReq) {
+func (pa *PathHandler) addReaderPost(req defs.PathAddReaderReq) {
 	if _, ok := pa.readers[req.Author]; ok {
 		req.Res <- defs.PathAddReaderRes{
 			Path:   pa,
@@ -847,7 +859,7 @@ func (pa *path) addReaderPost(req defs.PathAddReaderReq) {
 }
 
 // reloadConf is called by pathManager.
-func (pa *path) reloadConf(newConf *conf.Path) {
+func (pa *PathHandler) reloadConf(newConf *conf.Path) {
 	select {
 	case pa.chReloadConf <- newConf:
 	case <-pa.ctx.Done():
@@ -855,7 +867,7 @@ func (pa *path) reloadConf(newConf *conf.Path) {
 }
 
 // StaticSourceHandlerSetReady is called by staticsources.Handler.
-func (pa *path) StaticSourceHandlerSetReady(
+func (pa *PathHandler) StaticSourceHandlerSetReady(
 	ctx context.Context, req defs.PathSourceStaticSetReadyReq,
 ) {
 	select {
@@ -873,7 +885,7 @@ func (pa *path) StaticSourceHandlerSetReady(
 }
 
 // StaticSourceHandlerSetNotReady is called by staticsources.Handler.
-func (pa *path) StaticSourceHandlerSetNotReady(
+func (pa *PathHandler) StaticSourceHandlerSetNotReady(
 	ctx context.Context, req defs.PathSourceStaticSetNotReadyReq,
 ) {
 	select {
@@ -891,7 +903,7 @@ func (pa *path) StaticSourceHandlerSetNotReady(
 }
 
 // describe is called by a reader or publisher through pathManager.
-func (pa *path) describe(req defs.PathDescribeReq) defs.PathDescribeRes {
+func (pa *PathHandler) describe(req defs.PathDescribeReq) defs.PathDescribeRes {
 	select {
 	case pa.chDescribe <- req:
 		return <-req.Res
@@ -901,7 +913,7 @@ func (pa *path) describe(req defs.PathDescribeReq) defs.PathDescribeRes {
 }
 
 // addPublisher is called by a publisher through pathManager.
-func (pa *path) addPublisher(req defs.PathAddPublisherReq) (defs.Path, *stream.Stream, error) {
+func (pa *PathHandler) addPublisher(req defs.PathAddPublisherReq) (defs.Path, *stream.Stream, error) {
 	select {
 	case pa.chAddPublisher <- req:
 		res := <-req.Res
@@ -912,7 +924,7 @@ func (pa *path) addPublisher(req defs.PathAddPublisherReq) (defs.Path, *stream.S
 }
 
 // RemovePublisher is called by a publisher.
-func (pa *path) RemovePublisher(req defs.PathRemovePublisherReq) {
+func (pa *PathHandler) RemovePublisher(req defs.PathRemovePublisherReq) {
 	req.Res = make(chan struct{})
 	select {
 	case pa.chRemovePublisher <- req:
@@ -922,7 +934,7 @@ func (pa *path) RemovePublisher(req defs.PathRemovePublisherReq) {
 }
 
 // addReader is called by a reader through pathManager.
-func (pa *path) addReader(req defs.PathAddReaderReq) (defs.Path, *stream.Stream, error) {
+func (pa *PathHandler) addReader(req defs.PathAddReaderReq) (defs.Path, *stream.Stream, error) {
 	select {
 	case pa.chAddReader <- req:
 		res := <-req.Res
@@ -933,7 +945,7 @@ func (pa *path) addReader(req defs.PathAddReaderReq) (defs.Path, *stream.Stream,
 }
 
 // RemoveReader is called by a reader.
-func (pa *path) RemoveReader(req defs.PathRemoveReaderReq) {
+func (pa *PathHandler) RemoveReader(req defs.PathRemoveReaderReq) {
 	req.Res = make(chan struct{})
 	select {
 	case pa.chRemoveReader <- req:
@@ -943,7 +955,7 @@ func (pa *path) RemoveReader(req defs.PathRemoveReaderReq) {
 }
 
 // APIPathsGet is called by api.
-func (pa *path) APIPathsGet(req pathAPIPathsGetReq) (*defs.APIPath, error) {
+func (pa *PathHandler) APIPathsGet(req pathAPIPathsGetReq) (*defs.APIPath, error) {
 	req.res = make(chan pathAPIPathsGetRes)
 	select {
 	case pa.chAPIPathsGet <- req:

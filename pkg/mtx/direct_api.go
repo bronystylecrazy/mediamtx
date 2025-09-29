@@ -1,9 +1,12 @@
-package mediamtx
+package mtx
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/bluenviron/mediamtx/pkg/auth"
+	conf2 "github.com/bluenviron/mediamtx/pkg/conf"
+	defs2 "github.com/bluenviron/mediamtx/pkg/defs"
 	"net"
 	"reflect"
 	"sort"
@@ -12,78 +15,74 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/auth"
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/conf"
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/defs"
 )
 
 // MediaMTXAPIInterface defines the contract for MediaMTX API operations
 type MediaMTXAPIInterface interface {
 	// Configuration Management
-	GetGlobalConfig() (*conf.Conf, error)
-	UpdateGlobalConfig(newConf *conf.Conf) error
-	PatchGlobalConfig(optionalGlobal *conf.OptionalGlobal) error
-	GetPathDefaults() *conf.Path
-	UpdatePathDefaults(defaults *conf.OptionalPath) error
-	PatchPathDefaults(optionalPath *conf.OptionalPath) error
+	GetGlobalConfig() (*conf2.Conf, error)
+	UpdateGlobalConfig(newConf *conf2.Conf) error
+	PatchGlobalConfig(optionalGlobal *conf2.OptionalGlobal) error
+	GetPathDefaults() *conf2.Path
+	UpdatePathDefaults(defaults *conf2.OptionalPath) error
+	PatchPathDefaults(optionalPath *conf2.OptionalPath) error
 
 	// Path Configuration Management
 	ListPathConfigs(pagination *PaginationParams) (*MediaMTXPathConfList, error)
-	GetPathConfig(name string) (*conf.Path, error)
-	AddPathConfig(name string, pathConf *conf.OptionalPath) error
-	UpdatePathConfig(name string, pathConf *conf.OptionalPath) error
-	ReplacePathConfig(name string, pathConf *conf.OptionalPath) error
+	GetPathConfig(name string) (*conf2.Path, error)
+	AddPathConfig(name string, pathConf *conf2.OptionalPath) error
+	UpdatePathConfig(name string, pathConf *conf2.OptionalPath) error
+	ReplacePathConfig(name string, pathConf *conf2.OptionalPath) error
 	DeletePathConfig(name string) error
 
 	// Runtime Path Information
-	ListActivePaths(pagination *PaginationParams) (*defs.APIPathList, error)
-	GetActivePath(name string) (*defs.APIPath, error)
+	ListActivePaths(pagination *PaginationParams) (*defs2.APIPathList, error)
+	GetActivePath(name string) (*defs2.APIPath, error)
 
 	// RTSP Server Management
-	GetRTSPConnections(pagination *PaginationParams) (*defs.APIRTSPConnsList, error)
-	GetRTSPConnection(id string) (*defs.APIRTSPConn, error)
-	GetRTSPSessions(pagination *PaginationParams) (*defs.APIRTSPSessionList, error)
-	GetRTSPSession(id string) (*defs.APIRTSPSession, error)
+	GetRTSPConnections(pagination *PaginationParams) (*defs2.APIRTSPConnsList, error)
+	GetRTSPConnection(id string) (*defs2.APIRTSPConn, error)
+	GetRTSPSessions(pagination *PaginationParams) (*defs2.APIRTSPSessionList, error)
+	GetRTSPSession(id string) (*defs2.APIRTSPSession, error)
 	KickRTSPSession(id string) error
 
 	// RTMP Server Management
-	GetRTMPConnections(pagination *PaginationParams) (*defs.APIRTMPConnList, error)
-	GetRTMPConnection(id string) (*defs.APIRTMPConn, error)
+	GetRTMPConnections(pagination *PaginationParams) (*defs2.APIRTMPConnList, error)
+	GetRTMPConnection(id string) (*defs2.APIRTMPConn, error)
 	KickRTMPConnection(id string) error
 
 	// RTMPS Server Management
-	GetRTMPSConnections(pagination *PaginationParams) (*defs.APIRTMPConnList, error)
-	GetRTMPSConnection(id string) (*defs.APIRTMPConn, error)
+	GetRTMPSConnections(pagination *PaginationParams) (*defs2.APIRTMPConnList, error)
+	GetRTMPSConnection(id string) (*defs2.APIRTMPConn, error)
 	KickRTMPSConnection(id string) error
 
 	// HLS Server Management
-	GetHLSMuxers(pagination *PaginationParams) (*defs.APIHLSMuxerList, error)
-	GetHLSMuxer(name string) (*defs.APIHLSMuxer, error)
+	GetHLSMuxers(pagination *PaginationParams) (*defs2.APIHLSMuxerList, error)
+	GetHLSMuxer(name string) (*defs2.APIHLSMuxer, error)
 
 	// WebRTC Server Management
-	GetWebRTCSessions(pagination *PaginationParams) (*defs.APIWebRTCSessionList, error)
-	GetWebRTCSession(id string) (*defs.APIWebRTCSession, error)
+	GetWebRTCSessions(pagination *PaginationParams) (*defs2.APIWebRTCSessionList, error)
+	GetWebRTCSession(id string) (*defs2.APIWebRTCSession, error)
 	KickWebRTCSession(id string) error
 
 	// SRT Server Management
-	GetSRTConnections(pagination *PaginationParams) (*defs.APISRTConnList, error)
-	GetSRTConnection(id string) (*defs.APISRTConn, error)
+	GetSRTConnections(pagination *PaginationParams) (*defs2.APISRTConnList, error)
+	GetSRTConnection(id string) (*defs2.APISRTConn, error)
 	KickSRTConnection(id string) error
 
 	// RTSPS Server Management
-	GetRTSPSConnections(pagination *PaginationParams) (*defs.APIRTSPConnsList, error)
-	GetRTSPSConnection(id string) (*defs.APIRTSPConn, error)
-	GetRTSPSSessions(pagination *PaginationParams) (*defs.APIRTSPSessionList, error)
-	GetRTSPSSession(id string) (*defs.APIRTSPSession, error)
+	GetRTSPSConnections(pagination *PaginationParams) (*defs2.APIRTSPConnsList, error)
+	GetRTSPSConnection(id string) (*defs2.APIRTSPConn, error)
+	GetRTSPSSessions(pagination *PaginationParams) (*defs2.APIRTSPSessionList, error)
+	GetRTSPSSession(id string) (*defs2.APIRTSPSession, error)
 	KickRTSPSSession(id string) error
 
 	// Recording Management
-	GetRecordings(query *RecordingQuery, pagination *PaginationParams) (*defs.APIRecordingList, error)
-	GetRecording(pathName string) (*defs.APIRecording, error)
+	GetRecordings(query *RecordingQuery, pagination *PaginationParams) (*defs2.APIRecordingList, error)
+	GetRecording(pathName string) (*defs2.APIRecording, error)
 	DeleteRecordingSegment(pathName string, segmentStart time.Time) error
-	GetRecordingsByPath(pathName string, pagination *PaginationParams) (*defs.APIRecordingList, error)
-	GetRecordingsByTimeRange(startTime, endTime time.Time, pagination *PaginationParams) (*defs.APIRecordingList, error)
+	GetRecordingsByPath(pathName string, pagination *PaginationParams) (*defs2.APIRecordingList, error)
+	GetRecordingsByTimeRange(startTime, endTime time.Time, pagination *PaginationParams) (*defs2.APIRecordingList, error)
 	GetRecordingInfo(pathName string) (*RecordingInfo, error)
 
 	// Recording Operations
@@ -155,7 +154,7 @@ type MediaMTXPathConfList struct {
 // =============================================================================
 
 // GetGlobalConfig returns the current global configuration
-func (api *MediaMTXAPI) GetGlobalConfig() (*conf.Conf, error) {
+func (api *MediaMTXAPI) GetGlobalConfig() (*conf2.Conf, error) {
 	api.mutex.RLock()
 	defer api.mutex.RUnlock()
 
@@ -166,7 +165,7 @@ func (api *MediaMTXAPI) GetGlobalConfig() (*conf.Conf, error) {
 }
 
 // UpdateGlobalConfig updates the global configuration
-func (api *MediaMTXAPI) UpdateGlobalConfig(newConf *conf.Conf) error {
+func (api *MediaMTXAPI) UpdateGlobalConfig(newConf *conf2.Conf) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
 
@@ -183,7 +182,7 @@ func (api *MediaMTXAPI) UpdateGlobalConfig(newConf *conf.Conf) error {
 }
 
 // PatchGlobalConfig patches the global configuration (equivalent to PATCH /config/global/patch)
-func (api *MediaMTXAPI) PatchGlobalConfig(optionalGlobal *conf.OptionalGlobal) error {
+func (api *MediaMTXAPI) PatchGlobalConfig(optionalGlobal *conf2.OptionalGlobal) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
 
@@ -207,12 +206,12 @@ func (api *MediaMTXAPI) PatchGlobalConfig(optionalGlobal *conf.OptionalGlobal) e
 }
 
 // GetPathDefaults returns the default PathHandler configuration
-func (api *MediaMTXAPI) GetPathDefaults() *conf.Path {
-	return &conf.Path{}
+func (api *MediaMTXAPI) GetPathDefaults() *conf2.Path {
+	return &conf2.Path{}
 }
 
 // UpdatePathDefaults updates the default PathHandler configuration
-func (api *MediaMTXAPI) UpdatePathDefaults(defaults *conf.OptionalPath) error {
+func (api *MediaMTXAPI) UpdatePathDefaults(defaults *conf2.OptionalPath) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
 
@@ -232,7 +231,7 @@ func (api *MediaMTXAPI) UpdatePathDefaults(defaults *conf.OptionalPath) error {
 }
 
 // PatchPathDefaults patches the default PathHandler configuration (equivalent to PATCH /config/pathdefaults/patch)
-func (api *MediaMTXAPI) PatchPathDefaults(optionalPath *conf.OptionalPath) error {
+func (api *MediaMTXAPI) PatchPathDefaults(optionalPath *conf2.OptionalPath) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
 
@@ -303,7 +302,7 @@ func (api *MediaMTXAPI) ListPathConfigs(pagination *PaginationParams) (*MediaMTX
 }
 
 // GetPathConfig returns the configuration for a specific PathHandler
-func (api *MediaMTXAPI) GetPathConfig(name string) (*conf.Path, error) {
+func (api *MediaMTXAPI) GetPathConfig(name string) (*conf2.Path, error) {
 	api.mutex.RLock()
 	conf := api.core.Conf
 	api.mutex.RUnlock()
@@ -321,7 +320,7 @@ func (api *MediaMTXAPI) GetPathConfig(name string) (*conf.Path, error) {
 }
 
 // AddPathConfig adds a new PathHandler configuration
-func (api *MediaMTXAPI) AddPathConfig(name string, pathConf *conf.OptionalPath) error {
+func (api *MediaMTXAPI) AddPathConfig(name string, pathConf *conf2.OptionalPath) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
 
@@ -350,7 +349,7 @@ func (api *MediaMTXAPI) AddPathConfig(name string, pathConf *conf.OptionalPath) 
 }
 
 // UpdatePathConfig updates an existing PathHandler configuration (partial update)
-func (api *MediaMTXAPI) UpdatePathConfig(name string, pathConf *conf.OptionalPath) error {
+func (api *MediaMTXAPI) UpdatePathConfig(name string, pathConf *conf2.OptionalPath) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
 
@@ -379,7 +378,7 @@ func (api *MediaMTXAPI) UpdatePathConfig(name string, pathConf *conf.OptionalPat
 }
 
 // ReplacePathConfig replaces an entire PathHandler configuration
-func (api *MediaMTXAPI) ReplacePathConfig(name string, pathConf *conf.OptionalPath) error {
+func (api *MediaMTXAPI) ReplacePathConfig(name string, pathConf *conf2.OptionalPath) error {
 	api.mutex.Lock()
 	defer api.mutex.Unlock()
 
@@ -441,7 +440,7 @@ func (api *MediaMTXAPI) DeletePathConfig(name string) error {
 // =============================================================================
 
 // ListActivePaths returns a list of all active paths with pagination
-func (api *MediaMTXAPI) ListActivePaths(pagination *PaginationParams) (*defs.APIPathList, error) {
+func (api *MediaMTXAPI) ListActivePaths(pagination *PaginationParams) (*defs2.APIPathList, error) {
 	data, err := api.core.PathManager.APIPathsList()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get active paths: %v", err)
@@ -461,10 +460,10 @@ func (api *MediaMTXAPI) ListActivePaths(pagination *PaginationParams) (*defs.API
 }
 
 // GetActivePath returns information about a specific active PathHandler
-func (api *MediaMTXAPI) GetActivePath(name string) (*defs.APIPath, error) {
+func (api *MediaMTXAPI) GetActivePath(name string) (*defs2.APIPath, error) {
 	data, err := api.core.PathManager.APIPathsGet(name)
 	if err != nil {
-		if errors.Is(err, conf.ErrPathNotFound) {
+		if errors.Is(err, conf2.ErrPathNotFound) {
 			return nil, fmt.Errorf("PathHandler '%s' not found or not active", name)
 		}
 		return nil, fmt.Errorf("failed to get PathHandler info: %v", err)
@@ -478,7 +477,7 @@ func (api *MediaMTXAPI) GetActivePath(name string) (*defs.APIPath, error) {
 // =============================================================================
 
 // GetRTSPConnections returns a list of RTSP connections with pagination
-func (api *MediaMTXAPI) GetRTSPConnections(pagination *PaginationParams) (*defs.APIRTSPConnsList, error) {
+func (api *MediaMTXAPI) GetRTSPConnections(pagination *PaginationParams) (*defs2.APIRTSPConnsList, error) {
 	if api.core.RtspServer == nil {
 		return nil, fmt.Errorf("RTSP server not available")
 	}
@@ -501,7 +500,7 @@ func (api *MediaMTXAPI) GetRTSPConnections(pagination *PaginationParams) (*defs.
 }
 
 // GetRTSPConnection returns information about a specific RTSP connection
-func (api *MediaMTXAPI) GetRTSPConnection(id string) (*defs.APIRTSPConn, error) {
+func (api *MediaMTXAPI) GetRTSPConnection(id string) (*defs2.APIRTSPConn, error) {
 	if api.core.RtspServer == nil {
 		return nil, fmt.Errorf("RTSP server not available")
 	}
@@ -520,7 +519,7 @@ func (api *MediaMTXAPI) GetRTSPConnection(id string) (*defs.APIRTSPConn, error) 
 }
 
 // GetRTSPSessions returns a list of RTSP sessions with pagination
-func (api *MediaMTXAPI) GetRTSPSessions(pagination *PaginationParams) (*defs.APIRTSPSessionList, error) {
+func (api *MediaMTXAPI) GetRTSPSessions(pagination *PaginationParams) (*defs2.APIRTSPSessionList, error) {
 	if api.core.RtspServer == nil {
 		return nil, fmt.Errorf("RTSP server not available")
 	}
@@ -543,7 +542,7 @@ func (api *MediaMTXAPI) GetRTSPSessions(pagination *PaginationParams) (*defs.API
 }
 
 // GetRTSPSession returns information about a specific RTSP session
-func (api *MediaMTXAPI) GetRTSPSession(id string) (*defs.APIRTSPSession, error) {
+func (api *MediaMTXAPI) GetRTSPSession(id string) (*defs2.APIRTSPSession, error) {
 	if api.core.RtspServer == nil {
 		return nil, fmt.Errorf("RTSP server not available")
 	}
@@ -585,7 +584,7 @@ func (api *MediaMTXAPI) KickRTSPSession(id string) error {
 // =============================================================================
 
 // sortedPathKeys returns sorted keys from paths map
-func (api *MediaMTXAPI) sortedPathKeys(paths map[string]*conf.Path) []string {
+func (api *MediaMTXAPI) sortedPathKeys(paths map[string]*conf2.Path) []string {
 	keys := make([]string, 0, len(paths))
 	for name := range paths {
 		keys = append(keys, name)
@@ -736,14 +735,14 @@ type PathOptions struct {
 }
 
 // NewOptionalPath creates a new OptionalPath with the given source
-func NewOptionalPath(source string) *conf.OptionalPath {
+func NewOptionalPath(source string) *conf2.OptionalPath {
 	return NewOptionalPathWithOptions(PathOptions{Source: source})
 }
 
 // NewOptionalPublisherPath creates a new OptionalPath configured to accept incoming streams
 // This is useful when you want to create a PathHandler that accepts streams pushed to it
 // rather than pulling from an external source
-func NewOptionalPublisherPath(name string) *conf.OptionalPath {
+func NewOptionalPublisherPath(name string) *conf2.OptionalPath {
 	return NewOptionalPathWithOptions(PathOptions{
 		Name:   name,
 		Source: "publisher",
@@ -751,8 +750,8 @@ func NewOptionalPublisherPath(name string) *conf.OptionalPath {
 }
 
 // NewOptionalPathWithOptions creates a new OptionalPath with typed options
-func NewOptionalPathWithOptions(options PathOptions) *conf.OptionalPath {
-	optPath := &conf.OptionalPath{}
+func NewOptionalPathWithOptions(options PathOptions) *conf2.OptionalPath {
+	optPath := &conf2.OptionalPath{}
 
 	// Convert PathOptions to JSON
 	optionsJSON, err := json.Marshal(options)
@@ -839,7 +838,7 @@ func (api *MediaMTXAPI) CreateAuthRequest(user, pass, query, ip string) (*auth.R
 	}
 
 	return &auth.Request{
-		Action: conf.AuthActionAPI,
+		Action: conf2.AuthActionAPI,
 		Query:  query,
 		Credentials: &auth.Credentials{
 			User: user,

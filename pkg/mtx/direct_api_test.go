@@ -1,10 +1,10 @@
-package mediamtx
+package mtx
 
 import (
+	conf2 "github.com/bluenviron/mediamtx/pkg/conf"
 	"testing"
 	"time"
 
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/conf"
 	"github.com/stretchr/testify/require"
 )
 
@@ -94,7 +94,7 @@ func TestDirectAPI_AuthenticationMethods(t *testing.T) {
 	require.Nil(t, authErr)
 
 	// Test CreateAuthRequest fields
-	require.Equal(t, conf.AuthActionAPI, req.Action)
+	require.Equal(t, conf2.AuthActionAPI, req.Action)
 	require.NotNil(t, req.Credentials)
 	require.Equal(t, "user", req.Credentials.User)
 	require.Equal(t, "pass", req.Credentials.Pass)
@@ -131,7 +131,7 @@ func TestDirectAPI_APIResult(t *testing.T) {
 
 func TestDirectAPI_paginateSlice(t *testing.T) {
 	core := &Core{
-		Conf: &conf.Conf{},
+		Conf: &conf2.Conf{},
 	}
 	api := NewMediaMTXAPI(core)
 
@@ -178,17 +178,17 @@ func TestDirectAPI_sortedPathKeys(t *testing.T) {
 	core := &Core{}
 	api := NewMediaMTXAPI(core)
 
-	paths := map[string]*conf.Path{
-		"zebra": &conf.Path{Name: "zebra"},
-		"alpha": &conf.Path{Name: "alpha"},
-		"beta":  &conf.Path{Name: "beta"},
+	paths := map[string]*conf2.Path{
+		"zebra": &conf2.Path{Name: "zebra"},
+		"alpha": &conf2.Path{Name: "alpha"},
+		"beta":  &conf2.Path{Name: "beta"},
 	}
 
 	keys := api.sortedPathKeys(paths)
 	require.Equal(t, []string{"alpha", "beta", "zebra"}, keys)
 
 	// Test with empty map
-	emptyPaths := map[string]*conf.Path{}
+	emptyPaths := map[string]*conf2.Path{}
 	keys = api.sortedPathKeys(emptyPaths)
 	require.Len(t, keys, 0)
 }
@@ -212,7 +212,7 @@ func TestDirectAPI_OptionalPathHelpers(t *testing.T) {
 	require.NotNil(t, optPath.Values)
 
 	// Verify the source was set
-	if path, ok := optPath.Values.(*conf.Path); ok {
+	if path, ok := optPath.Values.(*conf2.Path); ok {
 		require.Equal(t, "rtsp://localhost:8554/test", path.Source)
 		require.False(t, path.Record) // Default should be false
 	}
@@ -291,7 +291,7 @@ func TestDirectAPI_IntegrationWithRealCore(t *testing.T) {
 		require.NotNil(t, optPath.Values)
 
 		// Must be a *conf.Path struct to work with MediaMTX validation
-		path, ok := optPath.Values.(*conf.Path)
+		path, ok := optPath.Values.(*conf2.Path)
 		require.True(t, ok, "Values must be *conf.Path for MediaMTX compatibility")
 		require.Equal(t, "test", path.Name)
 
@@ -309,7 +309,7 @@ func TestDirectAPI_IntegrationWithRealCore(t *testing.T) {
 		require.NotNil(t, optPath)
 		require.NotNil(t, optPath.Values)
 
-		path, ok := optPath.Values.(*conf.Path)
+		path, ok := optPath.Values.(*conf2.Path)
 		require.True(t, ok, "Must create *conf.Path to avoid reflection panic")
 		require.Equal(t, "rtsp://localhost:8554/test", path.Source)
 		require.True(t, path.Record)
@@ -334,7 +334,7 @@ func TestDirectAPI_IntegrationWithRealCore_OLD(t *testing.T) {
 		require.NotNil(t, optPath.Values)
 
 		// Verify the Values field contains the expected data
-		if path, ok := optPath.Values.(*conf.Path); ok {
+		if path, ok := optPath.Values.(*conf2.Path); ok {
 			require.Equal(t, "rtsp://localhost:8554/test", path.Source)
 		} else {
 			t.Errorf("Expected Values to be *conf.Path, got %T", optPath.Values)
@@ -367,7 +367,7 @@ func TestDirectAPI_IntegrationWithRealCore_OLD(t *testing.T) {
 		require.NotNil(t, optPath.Values)
 
 		// Verify key fields are correctly set
-		if path, ok := optPath.Values.(*conf.Path); ok {
+		if path, ok := optPath.Values.(*conf2.Path); ok {
 			require.Equal(t, "rtsps://secure-camera:8554/stream", path.Source)
 			require.True(t, path.Record)
 			require.Equal(t, "/recordings/test", path.RecordPath)
@@ -481,7 +481,7 @@ func TestDirectAPI_PathOptions_Validation(t *testing.T) {
 		require.NotNil(t, optPath.Values)
 
 		// NewOptionalPath now creates proper *conf.Path structs
-		if path, ok := optPath.Values.(*conf.Path); ok {
+		if path, ok := optPath.Values.(*conf2.Path); ok {
 			require.Equal(t, "rtsp://localhost:8554/test", path.Source)
 		} else {
 			t.Errorf("Expected Values to be *conf.Path, got %T", optPath.Values)
@@ -504,7 +504,7 @@ func TestDirectAPI_PathOptions_Validation(t *testing.T) {
 		require.NotNil(t, optPath.Values, "Values should not be nil")
 
 		// Verify the conversion worked correctly
-		if path, ok := optPath.Values.(*conf.Path); ok {
+		if path, ok := optPath.Values.(*conf2.Path); ok {
 			require.Equal(t, "rtsp://localhost:8554/test", path.Source)
 			require.True(t, path.Record)
 			require.Equal(t, "/recordings", path.RecordPath)
@@ -539,7 +539,7 @@ func TestDirectAPI_PathOptions_Validation(t *testing.T) {
 		require.NotNil(t, optPath.Values)
 
 		// Verify comprehensive field conversion - focus on key fields that work
-		if path, ok := optPath.Values.(*conf.Path); ok {
+		if path, ok := optPath.Values.(*conf2.Path); ok {
 			require.Equal(t, "rtsp://camera1:8554/stream", path.Source)
 			require.True(t, path.Record)
 			require.Equal(t, "/recordings/camera1", path.RecordPath)
@@ -576,7 +576,7 @@ func TestDirectAPI_PathOptions_Validation(t *testing.T) {
 		require.NotNil(t, optPath.Values)
 
 		// Verify Pi camera fields - focus on basic functionality
-		if path, ok := optPath.Values.(*conf.Path); ok {
+		if path, ok := optPath.Values.(*conf2.Path); ok {
 			// Basic fields that should work
 			require.True(t, path.Record)
 			require.Equal(t, "/recordings/pi-cam", path.RecordPath)

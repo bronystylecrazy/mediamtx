@@ -1,14 +1,13 @@
-package mediamtx
+package mtx
 
 import (
 	"fmt"
+	"github.com/bluenviron/mediamtx/pkg/conf"
+	"github.com/bluenviron/mediamtx/pkg/defs"
+	"github.com/bluenviron/mediamtx/pkg/recordstore"
 	"os"
 	"strings"
 	"time"
-
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/conf"
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/defs"
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/recordstore"
 )
 
 // RecordingQuery represents parameters for querying recordings

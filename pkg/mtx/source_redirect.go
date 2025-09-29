@@ -1,8 +1,8 @@
-package mediamtx
+package mtx
 
 import (
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/defs"
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/logger"
+	"github.com/bluenviron/mediamtx/pkg/defs"
+	"github.com/bluenviron/mediamtx/pkg/logger"
 )
 
 // sourceRedirect is a source that redirects to another one.

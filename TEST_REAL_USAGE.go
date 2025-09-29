@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/bluenviron/mediamtx/pkg/conf"
 	"log"
 
 	"github.com/bluenviron/mediamtx/pkg/mediamtx"
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/conf"
 )
 
 // TestRealUsage demonstrates the original user case that was causing the panic
@@ -13,20 +13,20 @@ func main() {
 	fmt.Println("🧪 Testing MediaMTX API with comprehensive PathOptions...")
 
 	// Create a basic core (this simulates what the user was doing)
-	core := &mediamtx.Core{
+	core := &mtx.Core{
 		Conf: &conf.Conf{
 			Paths: make(map[string]*conf.Path),
 		},
 	}
 
 	// Create the API
-	api := mediamtx.NewMediaMTXAPI(core)
+	api := mtx.NewMediaMTXAPI(core)
 	_ = api // We're not using AddPathConfig in this test, just testing PathOptions
 
 	// Test 1: Original user case that was panicking
 	fmt.Println("\n1. Testing original user case...")
-	optPath := mediamtx.NewOptionalPathWithOptions(mediamtx.PathOptions{
-		Source:     "rtsp://localhost:8554/test", 
+	optPath := mtx.NewOptionalPathWithOptions(mtx.PathOptions{
+		Source:     "rtsp://localhost:8554/test",
 		Record:     true,
 		RecordPath: "/recordings",
 	})
@@ -44,7 +44,7 @@ func main() {
 
 	// Test 2: Comprehensive configuration
 	fmt.Println("\n2. Testing comprehensive configuration...")
-	comprehensiveOptions := mediamtx.PathOptions{
+	comprehensiveOptions := mtx.PathOptions{
 		Source:                     "rtsps://secure-camera:8554/stream",
 		Record:                     true,
 		RecordPath:                 "/recordings/secure",
@@ -61,10 +61,10 @@ func main() {
 		RunOnRecordSegmentComplete: "/scripts/process.sh",
 	}
 
-	comprehensiveOptPath := mediamtx.NewOptionalPathWithOptions(comprehensiveOptions)
+	comprehensiveOptPath := mtx.NewOptionalPathWithOptions(comprehensiveOptions)
 	if comprehensiveData, ok := comprehensiveOptPath.Values.(map[string]interface{}); ok {
 		fmt.Printf("✅ Comprehensive path created with %d fields\n", len(comprehensiveData))
-		
+
 		// Verify some key fields
 		if source, exists := comprehensiveData["source"]; exists {
 			fmt.Printf("   Source: %s\n", source)
@@ -79,22 +79,22 @@ func main() {
 
 	// Test 3: Raspberry Pi Camera configuration
 	fmt.Println("\n3. Testing Raspberry Pi Camera configuration...")
-	piOptions := mediamtx.PathOptions{
-		RPICameraCamID:   1,
-		RPICameraWidth:   1920,
-		RPICameraHeight:  1080,
-		RPICameraFPS:     30.0,
-		RPICameraHFlip:   true,
+	piOptions := mtx.PathOptions{
+		RPICameraCamID:    1,
+		RPICameraWidth:    1920,
+		RPICameraHeight:   1080,
+		RPICameraFPS:      30.0,
+		RPICameraHFlip:    true,
 		RPICameraExposure: "auto",
-		RPICameraCodec:   "h264",
-		Record:           true,
-		RecordPath:       "/recordings/pi-cam",
+		RPICameraCodec:    "h264",
+		Record:            true,
+		RecordPath:        "/recordings/pi-cam",
 	}
 
-	piOptPath := mediamtx.NewOptionalPathWithOptions(piOptions)
+	piOptPath := mtx.NewOptionalPathWithOptions(piOptions)
 	if piData, ok := piOptPath.Values.(map[string]interface{}); ok {
 		fmt.Printf("✅ Pi Camera path created with %d fields\n", len(piData))
-		
+
 		if camID, exists := piData["rpiCameraCamID"]; exists {
 			fmt.Printf("   Camera ID: %.0f\n", camID)
 		}

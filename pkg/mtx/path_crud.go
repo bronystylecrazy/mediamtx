@@ -1,14 +1,13 @@
-package mediamtx
+package mtx
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/bluenviron/mediamtx/pkg/conf"
+	defs2 "github.com/bluenviron/mediamtx/pkg/defs"
 	"sort"
 	"sync"
-
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/conf"
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/defs"
 )
 
 // PathCRUDManager interface is defined in interfaces.go to avoid duplication
@@ -37,12 +36,12 @@ var (
 type pathCRUDManager struct {
 	mutex       sync.RWMutex
 	conf        *conf.Conf
-	pathManager defs.APIPathManager
+	pathManager defs2.APIPathManager
 	onConfigSet func(*conf.Conf)
 }
 
 // NewPathCRUDManager creates a new PathCRUDManager instance
-func NewPathCRUDManager(config *conf.Conf, pathManager defs.APIPathManager, onConfigSet func(*conf.Conf)) PathCRUDManager {
+func NewPathCRUDManager(config *conf.Conf, pathManager defs2.APIPathManager, onConfigSet func(*conf.Conf)) PathCRUDManager {
 	return &pathCRUDManager{
 		conf:        config,
 		pathManager: pathManager,
@@ -394,7 +393,7 @@ func (m *pathCRUDManager) UpdatePathDefaults(pathConf *conf.OptionalPath) error 
 }
 
 // GetActivePathsInfo returns information about currently active paths
-func (m *pathCRUDManager) GetActivePathsInfo(itemsPerPage, page int) (*defs.APIPathList, error) {
+func (m *pathCRUDManager) GetActivePathsInfo(itemsPerPage, page int) (*defs2.APIPathList, error) {
 	if m.pathManager == nil {
 		return nil, &PathCRUDError{
 			Type:    ErrInternalError.Type,
@@ -429,7 +428,7 @@ func (m *pathCRUDManager) GetActivePathsInfo(itemsPerPage, page int) (*defs.APIP
 }
 
 // GetActivePathInfo returns information about a specific active PathHandler
-func (m *pathCRUDManager) GetActivePathInfo(name string) (*defs.APIPath, error) {
+func (m *pathCRUDManager) GetActivePathInfo(name string) (*defs2.APIPath, error) {
 	if err := conf.IsValidPathName(name); err != nil {
 		return nil, &PathCRUDError{
 			Type:    ErrInvalidPathName.Type,
@@ -523,7 +522,7 @@ func (m *pathCRUDManager) paginatePathConf(items *[]PathConf, itemsPerPage, page
 }
 
 // Helper method for API PathHandler pagination
-func (m *pathCRUDManager) paginateAPIPaths(items *[]*defs.APIPath, itemsPerPage, page int) (int, error) {
+func (m *pathCRUDManager) paginateAPIPaths(items *[]*defs2.APIPath, itemsPerPage, page int) (int, error) {
 	if itemsPerPage <= 0 {
 		return 1, nil
 	}
@@ -543,7 +542,7 @@ func (m *pathCRUDManager) paginateAPIPaths(items *[]*defs.APIPath, itemsPerPage,
 	endIdx := startIdx + itemsPerPage
 
 	if startIdx >= totalItems {
-		*items = []*defs.APIPath{}
+		*items = []*defs2.APIPath{}
 	} else {
 		if endIdx > totalItems {
 			endIdx = totalItems

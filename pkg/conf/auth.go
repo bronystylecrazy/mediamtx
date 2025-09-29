@@ -19,12 +19,12 @@ type AuthAction = conf.AuthAction
 
 // Authentication actions.
 const (
-	AuthActionPublish   AuthAction = "publish"
-	AuthActionRead      AuthAction = "read"
-	AuthActionPlayback  AuthAction = "playback"
+	AuthActionPublish  AuthAction = "publish"
+	AuthActionRead     AuthAction = "read"
+	AuthActionPlayback AuthAction = "playback"
 	AuthActionAPI      AuthAction = "api"
-	AuthActionMetrics   AuthAction = "metrics"
-	AuthActionPprof     AuthAction = "pprof"
+	AuthActionMetrics  AuthAction = "metrics"
+	AuthActionPprof    AuthAction = "pprof"
 )
 
 // AuthInternalUser is an internal user.

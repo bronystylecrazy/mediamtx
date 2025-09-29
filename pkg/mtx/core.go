@@ -1,9 +1,15 @@
 // Package core contains the main struct of the software.
-package mediamtx
+package mtx
 
 import (
 	"context"
 	_ "embed"
+	"github.com/bluenviron/mediamtx/pkg/auth"
+	conf2 "github.com/bluenviron/mediamtx/pkg/conf"
+	"github.com/bluenviron/mediamtx/pkg/externalcmd"
+	"github.com/bluenviron/mediamtx/pkg/logger"
+	"github.com/bluenviron/mediamtx/pkg/metrics"
+	"github.com/bluenviron/mediamtx/pkg/playback"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -15,13 +21,6 @@ import (
 
 	"github.com/bluenviron/gortsplib/v5"
 	"github.com/gin-gonic/gin"
-
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/auth"
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/conf"
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/externalcmd"
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/logger"
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/metrics"
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/playback"
 
 	// Keep internal packages that we haven't exposed yet
 	"github.com/bluenviron/mediamtx/internal/confwatcher"
@@ -48,7 +47,7 @@ var cli struct {
 	Confpath string `arg:"" default:""`
 }
 
-func atLeastOneRecordDeleteAfter(pathConfs map[string]*conf.Path) bool {
+func atLeastOneRecordDeleteAfter(pathConfs map[string]*conf2.Path) bool {
 	for _, e := range pathConfs {
 		if e.RecordDeleteAfter != 0 {
 			return true
@@ -57,12 +56,12 @@ func atLeastOneRecordDeleteAfter(pathConfs map[string]*conf.Path) bool {
 	return false
 }
 
-func getRTPMaxPayloadSize(udpMaxPayloadSize int, rtspEncryption conf.Encryption) int {
+func getRTPMaxPayloadSize(udpMaxPayloadSize int, rtspEncryption conf2.Encryption) int {
 	// UDP max payload size - 12 (RTP header)
 	v := udpMaxPayloadSize - 12
 
 	// 10 (SRTP HMAC SHA1 authentication tag)
-	if rtspEncryption == conf.EncryptionOptional || rtspEncryption == conf.EncryptionStrict {
+	if rtspEncryption == conf2.EncryptionOptional || rtspEncryption == conf2.EncryptionStrict {
 		v -= 10
 	}
 
@@ -74,7 +73,7 @@ type Core struct {
 	ctx             context.Context
 	ctxCancel       func()
 	ConfPath        string
-	Conf            *conf.Conf
+	Conf            *conf2.Conf
 	Logger          *logger.Logger
 	ExternalCmdPool *externalcmd.Pool
 	AuthManager     *auth.Manager
@@ -97,7 +96,7 @@ type Core struct {
 	opts Options
 
 	// in
-	ChAPIConfigSet chan *conf.Conf
+	ChAPIConfigSet chan *conf2.Conf
 
 	// out
 	Done chan struct{}
@@ -118,14 +117,14 @@ func New(opts Options) (*Core, error) {
 	p := &Core{
 		ctx:            ctx,
 		ctxCancel:      ctxCancel,
-		ChAPIConfigSet: make(chan *conf.Conf),
+		ChAPIConfigSet: make(chan *conf2.Conf),
 		Done:           make(chan struct{}),
 		opts:           opts,
 	}
 
 	tempLogger, _ := logger.New(logger.Warn, []logger.Destination{logger.DestinationStdout}, "", "")
 
-	cfg, confPath, err := conf.Load(cli.Confpath, defaultConfPaths, tempLogger)
+	cfg, confPath, err := conf2.Load(cli.Confpath, defaultConfPaths, tempLogger)
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +192,7 @@ outer:
 		case <-confChanged:
 			p.Log(logger.Info, "reloading configuration (file changed)")
 
-			newConf, _, err := conf.Load(p.ConfPath, nil, p.Logger)
+			newConf, _, err := conf2.Load(p.ConfPath, nil, p.Logger)
 			if err != nil {
 				p.Log(logger.Error, "%s", err)
 				break outer
@@ -374,8 +373,8 @@ func (p *Core) CreateResources(initial bool) error {
 	}
 
 	if p.Conf.RTSP &&
-		(p.Conf.RTSPEncryption == conf.EncryptionNo ||
-			p.Conf.RTSPEncryption == conf.EncryptionOptional) &&
+		(p.Conf.RTSPEncryption == conf2.EncryptionNo ||
+			p.Conf.RTSPEncryption == conf2.EncryptionOptional) &&
 		p.RtspServer == nil {
 		_, useUDP := p.Conf.RTSPTransports[gortsplib.ProtocolUDP]
 		_, useMulticast := p.Conf.RTSPTransports[gortsplib.ProtocolUDPMulticast]
@@ -415,8 +414,8 @@ func (p *Core) CreateResources(initial bool) error {
 	}
 
 	if p.Conf.RTSP &&
-		(p.Conf.RTSPEncryption == conf.EncryptionStrict ||
-			p.Conf.RTSPEncryption == conf.EncryptionOptional) &&
+		(p.Conf.RTSPEncryption == conf2.EncryptionStrict ||
+			p.Conf.RTSPEncryption == conf2.EncryptionOptional) &&
 		p.RtspsServer == nil {
 		_, useUDP := p.Conf.RTSPTransports[gortsplib.ProtocolUDP]
 		_, useMulticast := p.Conf.RTSPTransports[gortsplib.ProtocolUDPMulticast]
@@ -456,8 +455,8 @@ func (p *Core) CreateResources(initial bool) error {
 	}
 
 	if p.Conf.RTMP &&
-		(p.Conf.RTMPEncryption == conf.EncryptionNo ||
-			p.Conf.RTMPEncryption == conf.EncryptionOptional) &&
+		(p.Conf.RTMPEncryption == conf2.EncryptionNo ||
+			p.Conf.RTMPEncryption == conf2.EncryptionOptional) &&
 		p.RtmpServer == nil {
 		i := &rtmp.Server{
 			Address:             p.Conf.RTMPAddress,
@@ -483,8 +482,8 @@ func (p *Core) CreateResources(initial bool) error {
 	}
 
 	if p.Conf.RTMP &&
-		(p.Conf.RTMPEncryption == conf.EncryptionStrict ||
-			p.Conf.RTMPEncryption == conf.EncryptionOptional) &&
+		(p.Conf.RTMPEncryption == conf2.EncryptionStrict ||
+			p.Conf.RTMPEncryption == conf2.EncryptionOptional) &&
 		p.RtmpsServer == nil {
 		i := &rtmp.Server{
 			Address:             p.Conf.RTMPSAddress,
@@ -633,7 +632,7 @@ func (p *Core) CreateResources(initial bool) error {
 	return nil
 }
 
-func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
+func (p *Core) closeResources(newConf *conf2.Conf, calledByAPI bool) {
 	closeLogger := newConf == nil ||
 		newConf.LogLevel != p.Conf.LogLevel ||
 		!reflect.DeepEqual(newConf.LogDestinations, p.Conf.LogDestinations) ||
@@ -952,14 +951,14 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 	}
 }
 
-func (p *Core) reloadConf(newConf *conf.Conf, calledByAPI bool) error {
+func (p *Core) reloadConf(newConf *conf2.Conf, calledByAPI bool) error {
 	p.closeResources(newConf, calledByAPI)
 	p.Conf = newConf
 	return p.CreateResources(false)
 }
 
 // APIConfigSet is called by api.
-func (p *Core) APIConfigSet(conf *conf.Conf) {
+func (p *Core) APIConfigSet(conf *conf2.Conf) {
 	select {
 	case p.ChAPIConfigSet <- conf:
 	case <-p.ctx.Done():

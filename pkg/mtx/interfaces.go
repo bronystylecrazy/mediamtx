@@ -1,10 +1,10 @@
-package mediamtx
+package mtx
 
 import (
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/auth"
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/conf"
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/defs"
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/metrics"
+	"github.com/bluenviron/mediamtx/pkg/auth"
+	conf2 "github.com/bluenviron/mediamtx/pkg/conf"
+	defs2 "github.com/bluenviron/mediamtx/pkg/defs"
+	"github.com/bluenviron/mediamtx/pkg/metrics"
 )
 
 // MediaMTXManager is the main interface for managing MediaMTX server operations
@@ -16,10 +16,10 @@ type MediaMTXManager interface {
 	IsRunning() bool
 
 	// Configuration management
-	GetConfiguration() *conf.Conf
-	UpdateConfiguration(*conf.Conf) error
+	GetConfiguration() *conf2.Conf
+	UpdateConfiguration(*conf2.Conf) error
 	ReloadConfiguration() error
-	
+
 	// Path management
 	GetPathCRUDManager() PathCRUDManager
 }
@@ -29,31 +29,31 @@ type MediaMTXManager interface {
 type PathCRUDManager interface {
 	// Core CRUD operations
 	ListPaths(itemsPerPage, page int) (*PathConfList, error)
-	GetPath(name string) (*conf.Path, error)
-	CreatePath(name string, pathConf *conf.OptionalPath) error
-	UpdatePath(name string, pathConf *conf.OptionalPath) error
-	ReplacePath(name string, pathConf *conf.OptionalPath) error
+	GetPath(name string) (*conf2.Path, error)
+	CreatePath(name string, pathConf *conf2.OptionalPath) error
+	UpdatePath(name string, pathConf *conf2.OptionalPath) error
+	ReplacePath(name string, pathConf *conf2.OptionalPath) error
 	DeletePath(name string) error
 
 	// Validation and defaults
-	ValidatePath(name string, pathConf *conf.OptionalPath) error
-	GetPathDefaults() *conf.Path
-	UpdatePathDefaults(pathConf *conf.OptionalPath) error
+	ValidatePath(name string, pathConf *conf2.OptionalPath) error
+	GetPathDefaults() *conf2.Path
+	UpdatePathDefaults(pathConf *conf2.OptionalPath) error
 
 	// Active PathHandler information (requires connection to running server)
-	GetActivePathsInfo(itemsPerPage, page int) (*defs.APIPathList, error)
-	GetActivePathInfo(name string) (*defs.APIPath, error)
+	GetActivePathsInfo(itemsPerPage, page int) (*defs2.APIPathList, error)
+	GetActivePathInfo(name string) (*defs2.APIPath, error)
 }
 
 // PathHelper provides utility methods for creating PathHandler configurations
 type PathHelperInterface interface {
-	CreateBasicPath() *conf.OptionalPath
-	CreateRTSPPath(rtspURL string) *conf.OptionalPath
-	CreateRTMPPath(rtmpURL string) *conf.OptionalPath
-	CreateHLSPath(hlsURL string) *conf.OptionalPath
-	CreateWebRTCPath() *conf.OptionalPath
-	CreateRecordingPath(recordPath string, format conf.RecordFormat) *conf.OptionalPath
-	CreateOnDemandPath(runOnDemandCmd string) *conf.OptionalPath
+	CreateBasicPath() *conf2.OptionalPath
+	CreateRTSPPath(rtspURL string) *conf2.OptionalPath
+	CreateRTMPPath(rtmpURL string) *conf2.OptionalPath
+	CreateHLSPath(hlsURL string) *conf2.OptionalPath
+	CreateWebRTCPath() *conf2.OptionalPath
+	CreateRecordingPath(recordPath string, format conf2.RecordFormat) *conf2.OptionalPath
+	CreateOnDemandPath(runOnDemandCmd string) *conf2.OptionalPath
 }
 
 // PathValidator provides validation methods for PathHandler configurations
@@ -66,22 +66,22 @@ type PathValidatorInterface interface {
 
 // PathAnalyzer provides analysis methods for PathHandler configurations and status
 type PathAnalyzerInterface interface {
-	AnalyzePathSource(path *conf.Path) map[string]interface{}
-	AnalyzePathStatus(apiPath *defs.APIPath) map[string]interface{}
+	AnalyzePathSource(path *conf2.Path) map[string]interface{}
+	AnalyzePathStatus(apiPath *defs2.APIPath) map[string]interface{}
 }
 
 // PathQuery provides query and filtering capabilities for paths
 type PathQueryInterface interface {
-	FilterPathsBySource(paths []*conf.Path, sourceType string) []*conf.Path
-	FilterPathsByRecording(paths []*conf.Path, recordingEnabled bool) []*conf.Path
-	FilterPathsByOnDemand(paths []*conf.Path, onDemandEnabled bool) []*conf.Path
+	FilterPathsBySource(paths []*conf2.Path, sourceType string) []*conf2.Path
+	FilterPathsByRecording(paths []*conf2.Path, recordingEnabled bool) []*conf2.Path
+	FilterPathsByOnDemand(paths []*conf2.Path, onDemandEnabled bool) []*conf2.Path
 	SearchPathsByName(pathNames []string, pattern string) []string
 }
 
 // PathStats provides statistics and metrics for paths
 type PathStatsInterface interface {
-	CalculateTrafficStats(apiPaths []*defs.APIPath) map[string]interface{}
-	CountPathsByType(paths []*conf.Path) map[string]int
+	CalculateTrafficStats(apiPaths []*defs2.APIPath) map[string]interface{}
+	CountPathsByType(paths []*conf2.Path) map[string]int
 }
 
 // ServerManager provides server-level management operations
@@ -108,10 +108,10 @@ type ServerManager interface {
 // ConnectionManager provides connection management operations
 type ConnectionManager interface {
 	// List connections by protocol
-	ListRTSPConnections() ([]*defs.APIRTSPConn, error)
-	ListRTMPConnections() ([]*defs.APIRTMPConn, error)
-	ListSRTConnections() ([]*defs.APISRTConn, error)
-	ListWebRTCConnections() ([]*defs.APIWebRTCSession, error)
+	ListRTSPConnections() ([]*defs2.APIRTSPConn, error)
+	ListRTMPConnections() ([]*defs2.APIRTMPConn, error)
+	ListSRTConnections() ([]*defs2.APISRTConn, error)
+	ListWebRTCConnections() ([]*defs2.APIWebRTCSession, error)
 
 	// Connection management
 	DisconnectRTSPConnection(id string) error
@@ -120,15 +120,15 @@ type ConnectionManager interface {
 	DisconnectWebRTCConnection(id string) error
 
 	// Session management
-	ListRTSPSessions() ([]*defs.APIRTSPSession, error)
+	ListRTSPSessions() ([]*defs2.APIRTSPSession, error)
 	DisconnectRTSPSession(id string) error
 }
 
 // StreamManager provides stream management operations
 type StreamManager interface {
 	// Stream information
-	GetStreamInfo(pathName string) (*defs.APIPath, error)
-	ListActiveStreams() ([]*defs.APIPath, error)
+	GetStreamInfo(pathName string) (*defs2.APIPath, error)
+	ListActiveStreams() ([]*defs2.APIPath, error)
 
 	// Stream control
 	StartStream(pathName string) error
@@ -148,8 +148,8 @@ type RecordingManager interface {
 	IsRecording(pathName string) (bool, error)
 
 	// Recording file management
-	ListRecordings(pathName string) ([]*defs.APIRecording, error)
-	GetRecordingInfo(pathName, fileName string) (*defs.APIRecordingSegment, error)
+	ListRecordings(pathName string) ([]*defs2.APIRecording, error)
+	GetRecordingInfo(pathName, fileName string) (*defs2.APIRecordingSegment, error)
 	DeleteRecording(pathName, fileName string) error
 
 	// Recording configuration
@@ -204,15 +204,15 @@ type ConfigurationManager interface {
 	GetConfigPath() string
 
 	// Configuration validation
-	ValidateConfiguration(config *conf.Conf) error
+	ValidateConfiguration(config *conf2.Conf) error
 	GetConfigurationErrors() []error
 
 	// Configuration sections
-	GetGlobalConfig() *conf.Global
-	UpdateGlobalConfig(global *conf.Global) error
+	GetGlobalConfig() *conf2.Global
+	UpdateGlobalConfig(global *conf2.Global) error
 
 	// Configuration templates
-	GetDefaultConfiguration() *conf.Conf
+	GetDefaultConfiguration() *conf2.Conf
 	CreateConfigurationTemplate() map[string]interface{}
 }
 
@@ -254,7 +254,7 @@ func NewConnectionManager(core *Core) ConnectionManager {
 }
 
 // NewStreamManager creates a new stream manager instance
-func NewStreamManager(pathManager defs.APIPathManager) StreamManager {
+func NewStreamManager(pathManager defs2.APIPathManager) StreamManager {
 	// Implementation would go here
 	return nil
 }

@@ -1,4 +1,4 @@
-package mediamtx
+package mtx
 
 import "context"
 

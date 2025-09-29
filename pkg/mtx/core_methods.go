@@ -1,11 +1,10 @@
-package mediamtx
+package mtx
 
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/conf"
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/defs"
+	"github.com/bluenviron/mediamtx/pkg/conf"
+	"github.com/bluenviron/mediamtx/pkg/defs"
 )
 
 // Core-level convenience methods for PathHandler management

@@ -1,4 +1,4 @@
-package mediamtx
+package mtx
 
 // Generated structs based on api/openapi.yaml models
 // These provide type-safe alternatives to JSON string manipulation
@@ -6,9 +6,8 @@ package mediamtx
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bluenviron/mediamtx/pkg/conf"
 	"time"
-
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/conf"
 )
 
 // APIError represents an error response from the API

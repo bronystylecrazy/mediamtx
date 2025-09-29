@@ -1,6 +1,8 @@
-package mediamtx
+package mtx
 
-import "github.com/bluenviron/mediamtx/pkg/mediamtx/logger"
+import (
+	"github.com/bluenviron/mediamtx/pkg/logger"
+)
 
 type LogLevel = logger.Level
 

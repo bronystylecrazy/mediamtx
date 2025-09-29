@@ -1,13 +1,12 @@
-package mediamtx
+package mtx
 
 import (
 	"fmt"
+	"github.com/bluenviron/mediamtx/pkg/conf"
+	"github.com/bluenviron/mediamtx/pkg/defs"
 	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/conf"
-	"github.com/bluenviron/mediamtx/pkg/mediamtx/defs"
 )
 
 // PathHelper provides utility methods for PathHandler operations

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"time"
 
 	"github.com/bluenviron/gortsplib/v5/pkg/description"
 	"github.com/bluenviron/gortsplib/v5/pkg/format"
@@ -24,7 +23,7 @@ var errNoSupportedCodecs = errors.New(
 // ToStream maps a MPEG-TS stream to a MediaMTX stream.
 func ToStream(
 	r *EnhancedReader,
-	stream **stream.Stream,
+	strm **stream.Stream,
 	l logger.Writer,
 ) ([]*description.Media, error) {
 	var medias []*description.Media //nolint:prealloc
@@ -48,12 +47,9 @@ func ToStream(
 			r.OnDataH265(track, func(pts int64, _ int64, au [][]byte) error {
 				pts = td.Decode(pts)
 
-				(*stream).WriteUnit(medi, medi.Formats[0], &unit.H265{
-					Base: unit.Base{
-						NTP: time.Now(),
-						PTS: pts, // no conversion is needed since clock rate is 90khz in both MPEG-TS and RTSP
-					},
-					AU: au,
+				(*strm).WriteUnit(medi, medi.Formats[0], &unit.Unit{
+					PTS:     pts, // no conversion is needed since clock rate is 90khz in both MPEG-TS and RTSP
+					Payload: unit.PayloadH265(au),
 				})
 				return nil
 			})
@@ -70,12 +66,9 @@ func ToStream(
 			r.OnDataH264(track, func(pts int64, _ int64, au [][]byte) error {
 				pts = td.Decode(pts)
 
-				(*stream).WriteUnit(medi, medi.Formats[0], &unit.H264{
-					Base: unit.Base{
-						NTP: time.Now(),
-						PTS: pts, // no conversion is needed since clock rate is 90khz in both MPEG-TS and RTSP
-					},
-					AU: au,
+				(*strm).WriteUnit(medi, medi.Formats[0], &unit.Unit{
+					PTS:     pts, // no conversion is needed since clock rate is 90khz in both MPEG-TS and RTSP
+					Payload: unit.PayloadH264(au),
 				})
 				return nil
 			})
@@ -91,12 +84,9 @@ func ToStream(
 			r.OnDataMPEGxVideo(track, func(pts int64, frame []byte) error {
 				pts = td.Decode(pts)
 
-				(*stream).WriteUnit(medi, medi.Formats[0], &unit.MPEG4Video{
-					Base: unit.Base{
-						NTP: time.Now(),
-						PTS: pts, // no conversion is needed since clock rate is 90khz in both MPEG-TS and RTSP
-					},
-					Frame: frame,
+				(*strm).WriteUnit(medi, medi.Formats[0], &unit.Unit{
+					PTS:     pts, // no conversion is needed since clock rate is 90khz in both MPEG-TS and RTSP
+					Payload: unit.PayloadMPEG4Video(frame),
 				})
 				return nil
 			})
@@ -110,12 +100,9 @@ func ToStream(
 			r.OnDataMPEGxVideo(track, func(pts int64, frame []byte) error {
 				pts = td.Decode(pts)
 
-				(*stream).WriteUnit(medi, medi.Formats[0], &unit.MPEG1Video{
-					Base: unit.Base{
-						NTP: time.Now(),
-						PTS: pts, // no conversion is needed since clock rate is 90khz in both MPEG-TS and RTSP
-					},
-					Frame: frame,
+				(*strm).WriteUnit(medi, medi.Formats[0], &unit.Unit{
+					PTS:     pts, // no conversion is needed since clock rate is 90khz in both MPEG-TS and RTSP
+					Payload: unit.PayloadMPEG1Video(frame),
 				})
 				return nil
 			})
@@ -132,12 +119,9 @@ func ToStream(
 			r.OnDataOpus(track, func(pts int64, packets [][]byte) error {
 				pts = td.Decode(pts)
 
-				(*stream).WriteUnit(medi, medi.Formats[0], &unit.Opus{
-					Base: unit.Base{
-						NTP: time.Now(),
-						PTS: multiplyAndDivide(pts, int64(medi.Formats[0].ClockRate()), 90000),
-					},
-					Packets: packets,
+				(*strm).WriteUnit(medi, medi.Formats[0], &unit.Unit{
+					PTS:     multiplyAndDivide(pts, int64(medi.Formats[0].ClockRate()), 90000),
+					Payload: unit.PayloadOpus(packets),
 				})
 				return nil
 			})
@@ -152,12 +136,9 @@ func ToStream(
 			r.OnDataKLV(track, func(pts int64, uni []byte) error {
 				pts = td.Decode(pts)
 
-				(*stream).WriteUnit(medi, medi.Formats[0], &unit.KLV{
-					Base: unit.Base{
-						NTP: time.Now(),
-						PTS: pts,
-					},
-					Unit: uni,
+				(*strm).WriteUnit(medi, medi.Formats[0], &unit.Unit{
+					PTS:     pts,
+					Payload: unit.PayloadKLV(uni),
 				})
 				return nil
 			})
@@ -177,12 +158,9 @@ func ToStream(
 			r.OnDataMPEG4Audio(track, func(pts int64, aus [][]byte) error {
 				pts = td.Decode(pts)
 
-				(*stream).WriteUnit(medi, medi.Formats[0], &unit.MPEG4Audio{
-					Base: unit.Base{
-						NTP: time.Now(),
-						PTS: multiplyAndDivide(pts, int64(medi.Formats[0].ClockRate()), 90000),
-					},
-					AUs: aus,
+				(*strm).WriteUnit(medi, medi.Formats[0], &unit.Unit{
+					PTS:     multiplyAndDivide(pts, int64(medi.Formats[0].ClockRate()), 90000),
+					Payload: unit.PayloadMPEG4Audio(aus),
 				})
 				return nil
 			})
@@ -231,12 +209,9 @@ func ToStream(
 						return err
 					}
 
-					(*stream).WriteUnit(medi, medi.Formats[0], &unit.MPEG4AudioLATM{
-						Base: unit.Base{
-							NTP: time.Now(),
-							PTS: pts,
-						},
-						Element: buf,
+					(*strm).WriteUnit(medi, medi.Formats[0], &unit.Unit{
+						PTS:     pts,
+						Payload: unit.PayloadMPEG4AudioLATM(buf),
 					})
 
 					pts += mpeg4audio.SamplesPerAccessUnit
@@ -254,12 +229,9 @@ func ToStream(
 			r.OnDataMPEG1Audio(track, func(pts int64, frames [][]byte) error {
 				pts = td.Decode(pts)
 
-				(*stream).WriteUnit(medi, medi.Formats[0], &unit.MPEG1Audio{
-					Base: unit.Base{
-						NTP: time.Now(),
-						PTS: pts, // no conversion is needed since clock rate is 90khz in both MPEG-TS and RTSP
-					},
-					Frames: frames,
+				(*strm).WriteUnit(medi, medi.Formats[0], &unit.Unit{
+					PTS:     pts, // no conversion is needed since clock rate is 90khz in both MPEG-TS and RTSP
+					Payload: unit.PayloadMPEG1Audio(frames),
 				})
 				return nil
 			})
@@ -277,12 +249,9 @@ func ToStream(
 			r.OnDataAC3(track, func(pts int64, frame []byte) error {
 				pts = td.Decode(pts)
 
-				(*stream).WriteUnit(medi, medi.Formats[0], &unit.AC3{
-					Base: unit.Base{
-						NTP: time.Now(),
-						PTS: multiplyAndDivide(pts, int64(medi.Formats[0].ClockRate()), 90000),
-					},
-					Frames: [][]byte{frame},
+				(*strm).WriteUnit(medi, medi.Formats[0], &unit.Unit{
+					PTS:     multiplyAndDivide(pts, int64(medi.Formats[0].ClockRate()), 90000),
+					Payload: unit.PayloadAC3{frame},
 				})
 				return nil
 			})

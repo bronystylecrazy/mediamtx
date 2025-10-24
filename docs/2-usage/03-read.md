@@ -207,6 +207,8 @@ GStreamer can read a stream from the server in several way. The recommended one 
 gst-launch-1.0 rtspsrc location=rtsp://127.0.0.1:8554/mystream latency=0 ! decodebin ! autovideosink
 ```
 
+For advanced options, see [RTSP-specific features](rtsp-specific-features).
+
 #### GStreamer and WebRTC
 
 GStreamer also supports reading streams with WebRTC/WHEP, although track codecs must be specified in advance through the `video-caps` and `audio-caps` parameters. Furthermore, if audio is not present, `audio-caps` must be set anyway and must point to a PCMU codec. For instance, the command for reading a video-only H264 stream is:
@@ -412,13 +414,7 @@ You can read a stream by using the [WebRTC protocol](#webrtc) by visiting the we
 http://localhost:8889/mystream
 ```
 
-This web page can be embedded into another web page by using an iframe:
-
-```html
-<iframe src="http://mediamtx-ip:8889/mystream" scrolling="no"></iframe>
-```
-
-For more advanced setups, you can create and serve a custom web page by starting from the [source code of the WebRTC read page](https://github.com/bluenviron/mediamtx/blob/{version_tag}/internal/servers/webrtc/read_index.html). In particular, there's a ready-to-use, standalone JavaScript class for reading streams with WebRTC, available in [reader.js](https://github.com/bluenviron/mediamtx/blob/{version_tag}/internal/servers/webrtc/reader.js).
+See [Embed streams in a website](embed-streams-in-a-website) for instructions on how to embed the stream into an external website.
 
 #### Web browsers and HLS
 
@@ -428,10 +424,4 @@ Web browsers can also read a stream with the [HLS protocol](#hls). Latency is hi
 http://localhost:8888/mystream
 ```
 
-This web page can be embedded into another web page by using an iframe:
-
-```html
-<iframe src="http://mediamtx-ip:8888/mystream" scrolling="no"></iframe>
-```
-
-For more advanced setups, you can create and serve a custom web page by starting from the [source code of the HLS read page](https://github.com/bluenviron/mediamtx/blob/{version_tag}/internal/servers/hls/index.html).
+See [Embed streams in a website](embed-streams-in-a-website) for instructions on how to embed the stream into an external website.

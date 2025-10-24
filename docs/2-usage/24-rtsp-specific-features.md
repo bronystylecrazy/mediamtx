@@ -12,11 +12,17 @@ The RTSP protocol supports several underlying transport protocols, that are chos
 
 To change the transport protocol, you have to tune the configuration of the client you are using to publish or read streams. In most clients, the default transport protocol is UDP.
 
-For instance, FFmpeg allows to change the transport protocol with the `-rtsp_transport` flag:
+FFmpeg allows to change the transport protocol with the `-rtsp_transport` flag:
 
 ```sh
 ffmpeg -rtsp_transport tcp -i rtsp://localhost:8554/mystream -c copy output.mp4
 ```
+
+Available options are:
+
+- `-rtsp_transport tcp` to pick the TCP transport protocol
+- `-rtsp_transport udp` to pick the UDP transport protocol
+- `-rtsp_transport udp_multicast` to pick the UDP-multicast transport protocol
 
 GStreamer allows to change the transport protocol with the `protocols` property of `rtspsrc` and `rtspclientsink`:
 
@@ -25,7 +31,13 @@ gst-launch-1.0 filesrc location=file.mp4 ! qtdemux name=d \
 d.video_0 ! rtspclientsink location=rtsp://localhost:8554/mystream protocols=tcp
 ```
 
-VLC allows to use the TCP transport protocol, use the `--rtsp_tcp` flag:
+Available options are:
+
+- `protocols=tcp` to pick the TCP transport protocol
+- `protocols=udp` to pick the UDP transport protocol
+- `protocols=udp-mcast` to pick the UDP-multicast transport protocol
+
+VLC allows to use the TCP transport protocol through the `--rtsp_tcp` flag:
 
 ```sh
 vlc --network-caching=50 --rtsp-tcp rtsp://localhost:8554/mystream
@@ -39,7 +51,7 @@ vlc --network-caching=50 rtsp://localhost:8554/mystream?vlcmulticast
 
 ## Encryption
 
-Incoming and outgoing RTSP streams can be encrypted by using a secure protocol variant, called RTSPS, that replaces all the subprotocols that are normally used in RTSP with their secure variant (TLS, MIKEY, SRTP). A TLS certificate is needed and can be generated with OpenSSL:
+Incoming and outgoing RTSP streams can be encrypted by using a secure protocol variant, called RTSPS, that replaces all the subprotocols that are normally used in RTSP with their secure variant (TLS, SRTP, SRTCP). A TLS certificate is needed and can be generated with OpenSSL:
 
 ```sh
 openssl genrsa -out server.key 2048

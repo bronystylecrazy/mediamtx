@@ -69,6 +69,7 @@ func initializeTestServer(t *testing.T) *Server {
 		AllowOrigin:           "*",
 		TrustedProxies:        conf.IPNetworks{},
 		ReadTimeout:           conf.Duration(10 * time.Second),
+		WriteTimeout:          conf.Duration(10 * time.Second),
 		LocalUDPAddress:       "127.0.0.1:8887",
 		LocalTCPAddress:       "127.0.0.1:8887",
 		IPsFromInterfaces:     true,
@@ -149,6 +150,7 @@ func TestServerOptionsICEServer(t *testing.T) {
 		Address:               "127.0.0.1:8886",
 		TrustedProxies:        conf.IPNetworks{},
 		ReadTimeout:           conf.Duration(10 * time.Second),
+		WriteTimeout:          conf.Duration(10 * time.Second),
 		LocalUDPAddress:       "127.0.0.1:8887",
 		LocalTCPAddress:       "127.0.0.1:8887",
 		IPsFromInterfaces:     true,
@@ -230,6 +232,7 @@ func TestServerPublish(t *testing.T) {
 		Address:               "127.0.0.1:8886",
 		TrustedProxies:        conf.IPNetworks{},
 		ReadTimeout:           conf.Duration(10 * time.Second),
+		WriteTimeout:          conf.Duration(10 * time.Second),
 		LocalUDPAddress:       "127.0.0.1:8887",
 		LocalTCPAddress:       "127.0.0.1:8887",
 		IPsFromInterfaces:     true,
@@ -295,16 +298,16 @@ func TestServerPublish(t *testing.T) {
 	r.OnData(
 		strm.Desc.Medias[0],
 		strm.Desc.Medias[0].Formats[0],
-		func(u unit.Unit) error {
+		func(u *unit.Unit) error {
 			select {
 			case <-recv:
 				return nil
 			default:
 			}
 
-			require.Equal(t, [][]byte{
+			require.Equal(t, unit.PayloadH264{
 				{1},
-			}, u.(*unit.H264).AU)
+			}, u.Payload)
 			close(recv)
 
 			return nil
@@ -333,7 +336,7 @@ func TestServerRead(t *testing.T) {
 	for _, ca := range []struct {
 		name          string
 		medias        []*description.Media
-		unit          unit.Unit
+		unit          *unit.Unit
 		outRTPPayload []byte
 	}{
 		{
@@ -344,8 +347,8 @@ func TestServerRead(t *testing.T) {
 					PayloadTyp: 96,
 				}},
 			}},
-			&unit.AV1{
-				TU: [][]byte{{1, 2}},
+			&unit.Unit{
+				Payload: unit.PayloadAV1{{1, 2}},
 			},
 			[]byte{0x10, 0x01, 0x02},
 		},
@@ -357,8 +360,8 @@ func TestServerRead(t *testing.T) {
 					PayloadTyp: 96,
 				}},
 			}},
-			&unit.VP9{
-				Frame: []byte{0x82, 0x49, 0x83, 0x42, 0x0, 0x77, 0xf0, 0x32, 0x34},
+			&unit.Unit{
+				Payload: unit.PayloadVP9{0x82, 0x49, 0x83, 0x42, 0x0, 0x77, 0xf0, 0x32, 0x34},
 			},
 			[]byte{
 				0x8f, 0xa0, 0xfd, 0x18, 0x07, 0x80, 0x03, 0x24,
@@ -374,16 +377,16 @@ func TestServerRead(t *testing.T) {
 					PayloadTyp: 96,
 				}},
 			}},
-			&unit.VP8{
-				Frame: []byte{1, 2},
+			&unit.Unit{
+				Payload: unit.PayloadVP8{1, 2},
 			},
 			[]byte{0x10, 1, 2},
 		},
 		{
 			"h264",
 			[]*description.Media{test.MediaH264},
-			&unit.H264{
-				AU: [][]byte{
+			&unit.Unit{
+				Payload: unit.PayloadH264{
 					{5, 1},
 				},
 			},
@@ -404,8 +407,8 @@ func TestServerRead(t *testing.T) {
 					ChannelCount: 2,
 				}},
 			}},
-			&unit.Opus{
-				Packets: [][]byte{{1, 2}},
+			&unit.Unit{
+				Payload: unit.PayloadOpus{{1, 2}},
 			},
 			[]byte{1, 2},
 		},
@@ -415,20 +418,18 @@ func TestServerRead(t *testing.T) {
 				Type:    description.MediaTypeAudio,
 				Formats: []format.Format{&format.G722{}},
 			}},
-			&unit.Generic{
-				Base: unit.Base{
-					RTPPackets: []*rtp.Packet{{
-						Header: rtp.Header{
-							Version:        2,
-							Marker:         true,
-							PayloadType:    9,
-							SequenceNumber: 1123,
-							Timestamp:      45343,
-							SSRC:           563423,
-						},
-						Payload: []byte{1, 2},
-					}},
-				},
+			&unit.Unit{
+				RTPPackets: []*rtp.Packet{{
+					Header: rtp.Header{
+						Version:        2,
+						Marker:         true,
+						PayloadType:    9,
+						SequenceNumber: 1123,
+						Timestamp:      45343,
+						SSRC:           563423,
+					},
+					Payload: []byte{1, 2},
+				}},
 			},
 			[]byte{1, 2},
 		},
@@ -442,8 +443,8 @@ func TestServerRead(t *testing.T) {
 					ChannelCount: 1,
 				}},
 			}},
-			&unit.G711{
-				Samples: []byte{1, 2, 3},
+			&unit.Unit{
+				Payload: unit.PayloadG711{1, 2, 3},
 			},
 			[]byte{1, 2, 3},
 		},
@@ -457,8 +458,8 @@ func TestServerRead(t *testing.T) {
 					ChannelCount: 2,
 				}},
 			}},
-			&unit.G711{
-				Samples: []byte{1, 2, 3, 4},
+			&unit.Unit{
+				Payload: unit.PayloadG711{1, 2, 3, 4},
 			},
 			[]byte{0x86, 0x84, 0x8a, 0x84, 0x8e, 0x84, 0x92, 0x84},
 		},
@@ -473,8 +474,8 @@ func TestServerRead(t *testing.T) {
 					ChannelCount: 2,
 				}},
 			}},
-			&unit.LPCM{
-				Samples: []byte{1, 2, 3, 4},
+			&unit.Unit{
+				Payload: unit.PayloadLPCM{1, 2, 3, 4},
 			},
 			[]byte{1, 2, 3, 4},
 		},
@@ -486,7 +487,7 @@ func TestServerRead(t *testing.T) {
 				WriteQueueSize:     512,
 				RTPMaxPayloadSize:  1450,
 				Desc:               desc,
-				GenerateRTPPackets: reflect.TypeOf(ca.unit) != reflect.TypeOf(&unit.Generic{}),
+				GenerateRTPPackets: ca.unit.Payload != nil,
 				Parent:             test.NilLogger,
 			}
 			err := strm.Initialize()
@@ -512,6 +513,7 @@ func TestServerRead(t *testing.T) {
 			s := &Server{
 				Address:               "127.0.0.1:8886",
 				ReadTimeout:           conf.Duration(10 * time.Second),
+				WriteTimeout:          conf.Duration(10 * time.Second),
 				LocalUDPAddress:       "127.0.0.1:8887",
 				LocalTCPAddress:       "127.0.0.1:8887",
 				IPsFromInterfaces:     true,
@@ -551,11 +553,11 @@ func TestServerRead(t *testing.T) {
 				r := reflect.New(reflect.TypeOf(ca.unit).Elem())
 				r.Elem().Set(reflect.ValueOf(ca.unit).Elem())
 
-				if g, ok := r.Interface().(*unit.Generic); ok {
-					clone := *g.RTPPackets[0]
+				if ca.unit.Payload == nil {
+					clone := *ca.unit.RTPPackets[0]
 					strm.WriteRTPPacket(desc.Medias[0], desc.Medias[0].Formats[0], &clone, time.Time{}, 0)
 				} else {
-					strm.WriteUnit(desc.Medias[0], desc.Medias[0].Formats[0], r.Interface().(unit.Unit))
+					strm.WriteUnit(desc.Medias[0], desc.Medias[0].Formats[0], r.Interface().(*unit.Unit))
 				}
 			}()
 
@@ -565,7 +567,7 @@ func TestServerRead(t *testing.T) {
 
 			done := make(chan struct{})
 
-			wc.IncomingTracks()[0].OnPacketRTP = func(pkt *rtp.Packet, _ time.Time) {
+			wc.IncomingTracks()[0].OnPacketRTP = func(pkt *rtp.Packet) {
 				select {
 				case <-done:
 				default:
@@ -596,6 +598,7 @@ func TestServerReadNotFound(t *testing.T) {
 		Address:               "127.0.0.1:8886",
 		TrustedProxies:        conf.IPNetworks{},
 		ReadTimeout:           conf.Duration(10 * time.Second),
+		WriteTimeout:          conf.Duration(10 * time.Second),
 		LocalUDPAddress:       "127.0.0.1:8887",
 		LocalTCPAddress:       "127.0.0.1:8887",
 		IPsFromInterfaces:     true,
@@ -736,8 +739,9 @@ func TestAuthError(t *testing.T) {
 	n := 0
 
 	s := &Server{
-		Address:     "127.0.0.1:8886",
-		ReadTimeout: conf.Duration(10 * time.Second),
+		Address:      "127.0.0.1:8886",
+		ReadTimeout:  conf.Duration(10 * time.Second),
+		WriteTimeout: conf.Duration(10 * time.Second),
 		PathManager: &test.PathManager{
 			FindPathConfImpl: func(req defs.PathFindPathConfReq) (*conf.Path, error) {
 				if req.AccessRequest.Credentials.User == "" && req.AccessRequest.Credentials.Pass == "" {

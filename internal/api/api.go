@@ -88,6 +88,8 @@ type apiParent interface {
 
 // API is an API server.
 type API struct {
+	Version        string
+	Started        time.Time
 	Address        string
 	Encryption     bool
 	ServerKey      string
@@ -95,6 +97,7 @@ type API struct {
 	AllowOrigin    string
 	TrustedProxies conf.IPNetworks
 	ReadTimeout    conf.Duration
+	WriteTimeout   conf.Duration
 	Conf           *conf.Conf
 	AuthManager    apiAuthManager
 	PathManager    defs.APIPathManager
@@ -120,6 +123,8 @@ func (a *API) Initialize() error {
 	router.Use(a.middlewareAuth)
 
 	group := router.Group("/v3")
+
+	group.GET("/info", a.onInfo)
 
 	group.POST("/auth/jwks/refresh", a.onAuthJwksRefresh)
 
@@ -189,13 +194,14 @@ func (a *API) Initialize() error {
 	group.DELETE("/recordings/deletesegment", a.onRecordingDeleteSegment)
 
 	a.httpServer = &httpp.Server{
-		Address:     a.Address,
-		ReadTimeout: time.Duration(a.ReadTimeout),
-		Encryption:  a.Encryption,
-		ServerCert:  a.ServerCert,
-		ServerKey:   a.ServerKey,
-		Handler:     router,
-		Parent:      a,
+		Address:      a.Address,
+		ReadTimeout:  time.Duration(a.ReadTimeout),
+		WriteTimeout: time.Duration(a.WriteTimeout),
+		Encryption:   a.Encryption,
+		ServerCert:   a.ServerCert,
+		ServerKey:    a.ServerKey,
+		Handler:      router,
+		Parent:       a,
 	}
 	err := a.httpServer.Initialize()
 	if err != nil {
@@ -536,6 +542,13 @@ func (a *API) onConfigPathsDelete(ctx *gin.Context) {
 	a.Parent.APIConfigSet(newConf)
 
 	ctx.Status(http.StatusOK)
+}
+
+func (a *API) onInfo(ctx *gin.Context) {
+	ctx.JSON(http.StatusOK, &defs.APIInfo{
+		Version: a.Version,
+		Started: a.Started,
+	})
 }
 
 func (a *API) onAuthJwksRefresh(ctx *gin.Context) {

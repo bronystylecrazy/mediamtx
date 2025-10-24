@@ -641,6 +641,7 @@ func (p *Core) CreateResources(initial bool) error {
 }
 
 func (p *Core) closeResources(newConf *conf2.Conf, calledByAPI bool) {
+
 	closeLogger := newConf == nil ||
 		newConf.LogLevel != p.Conf.LogLevel ||
 		!reflect.DeepEqual(newConf.LogDestinations, p.Conf.LogDestinations) ||
@@ -718,7 +719,8 @@ func (p *Core) closeResources(newConf *conf2.Conf, calledByAPI bool) {
 		closeMetrics ||
 		closeAuthManager ||
 		closeLogger
-	if !closePathManager && !reflect.DeepEqual(newConf.Paths, p.Conf.Paths) {
+
+	if newConf != nil {
 		p.PathManager.ReloadPathConfs(newConf.Paths)
 	}
 
